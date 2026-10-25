@@ -71,6 +71,6 @@ const p50 = percentile(latences, 50), p95 = percentile(latences, 95);
 ecrireResultat('redacteurs', {
   parametres: { redacteurs: R, tailleGroupe: G, documents: NB_DOCS, dureeS: DUREE / 1000, rythme: RYTHME },
   insertionsEnvoyees: envoyees, accusesCredit: accuses, refus, erreursConnexion: erreurs, observationsLatence: vus,
-  latenceMs: { p50, p95, p99: percentile(latences, 99), max: latences.length ? Math.max(...latences) : null },
+  latenceMs: { p50, p95, p99: percentile(latences, 99), max: latences.length ? latences.reduce((a, b) => (b > a ? b : a), -Infinity) : null },
   seuil: 'p95 < 1000 ms (T-06)', verdict: p95 != null && p95 < 1000 && erreurs === 0 && refus === 0 ? 'REUSSI' : 'ECHEC',
 });

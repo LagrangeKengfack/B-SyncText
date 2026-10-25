@@ -113,8 +113,9 @@ export function handleSummary(data) {
   const m = data.metrics;
   const t0 = m.ts_epuise_sonde_ms && m.ts_epuise_sonde_ms.values.min;
   const att = m.ts_epuise_recu_par_visiteur_en_attente_ms;
-  const t07 = (t0 && att && att.values.count) ? {
-    epuisementObserveMs: t0, visiteursEnAttenteInformes: att.values.count,
+  // Une tendance k6 n'a pas de « count » dans le résumé : on se fonde sur la présence de valeurs.
+  const t07 = (t0 && att && att.values && att.values.max) ? {
+    epuisementObserveMs: t0,
     delaiMedianMs: att.values.med - t0, delaiP95Ms: att.values['p(95)'] - t0, delaiMaxMs: att.values.max - t0,
     reussi: att.values.max - t0 < 5000,
   } : { note: 'épuisement non observé ou aucun visiteur en attente' };
