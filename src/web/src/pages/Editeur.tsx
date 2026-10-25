@@ -68,6 +68,8 @@ export default function Editeur() {
 
   const credit = redacteur?.credit
   const creditRef = useRef(credit)
+  /** Modifications pas encore confirmées par le serveur : tant qu'il y en a, le crédit du serveur est en retard sur la frappe. */
+  const nonSyncRef = useRef(0)
   useEffect(() => { creditRef.current = credit })
   const collabRef = useRef<Collab | null>(null)
   useEffect(() => { collabRef.current = collab })
@@ -101,7 +103,7 @@ export default function Editeur() {
       document: ydoc,
       onStatus: ({ status }) => { if (vivant) setStatut(status) },
       onSynced: ({ state }) => { if (vivant) setSynced(state) },
-      onUnsyncedChanges: ({ number }) => { if (vivant) setNonSync(number) },
+      onUnsyncedChanges: ({ number }) => { nonSyncRef.current = number; if (vivant) setNonSync(number) },
       onAuthenticated: ({ scope }) => { if (vivant) { setLectureServeur(scope === 'readonly'); setErreurCollab('') } },
       onAuthenticationFailed: ({ reason }) => { if (vivant) setErreurCollab(reason || 'Accès refusé') },
       onAwarenessChange: ({ states }) => {
@@ -118,8 +120,15 @@ export default function Editeur() {
         let m: Record<string, unknown>
         try { m = JSON.parse(payload) } catch { return }
         switch (m.type) {
-          case 'credit':
-            majCredit({ restant: m.restant as number, rechargeA: m.rechargeA as number | undefined })
+          case 'credit': {
+            // Le serveur confirme les insertions une à une : pendant une frappe rapide, sa valeur remonte
+            // au-dessus du décompte local. On garde la plus basse tant que des modifications attendent.
+            const serveur = m.restant as number
+            const local = creditRef.current?.restant
+            const restant = nonSyncRef.current > 0 && typeof local === 'number' ? Math.min(serveur, local) : serveur
+            majCredit({ restant, rechargeA: m.rechargeA as number | undefined })
+            break
+          }
             break
           case 'refus': {
             if (typeof m.restant === 'number') majCredit({ restant: m.restant, rechargeA: m.rechargeA as number | undefined })
