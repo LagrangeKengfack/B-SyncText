@@ -1,7 +1,7 @@
 /* Compléments propres à l'application (les maquettes sont statiques) : Tiptap, curseurs, fenêtres fixes. */
 
 /* Fenêtre ou panneau fixé au-dessus de la page */
-.voile-fixe { position: fixed; inset: 0; z-index: 60; overflow-y: auto; display: flex; align-items: flex-start; justify-content: center; padding: 10vh var(--e-4) var(--e-5); }
+.voile-fixe { position: fixed; inset: 0; z-index: 60; overflow-y: auto; display: flex; align-items: flex-start; justify-content: center; padding: 4vh var(--e-4) var(--e-5); }
 .voile-fixe .fenetre { margin: 0 auto var(--e-5); }
 .voile-fixe.scene__voile--droite { padding: 0; }
 
@@ -34,3 +34,7 @@
 /* Page A4 : le texte reste dans les marges, même un mot très long ou un collage sans espace. */
 .a4 .ProseMirror { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; }
 .a4 .ProseMirror * { max-width: 100%; }
+
+/* Liste déroulante du mode de téléchargement, dans l'en-tête de l'éditeur. */
+.mode-telechargement { display: inline-flex; align-items: center; gap: 6px; font: 600 0.85rem / 1 var(--police-ui); color: var(--texte-doux); white-space: nowrap; }
+.mode-telechargement select { font: 600 0.85rem / 1.2 var(--police-ui); color: var(--encre); background: var(--surface, #fff); border: 1.5px solid var(--bordure); border-radius: 10px; padding: 7px 10px; min-height: 36px; }

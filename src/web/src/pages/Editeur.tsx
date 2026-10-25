@@ -2,7 +2,7 @@ import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import * as Y from 'yjs'
-import { api, ErreurApi, type DocumentDetail, type Version } from '../api.ts'
+import { api, ErreurApi, type DocumentDetail, type ModeTelechargement, type Version } from '../api.ts'
 import { Avatar, Bandeau, CreditPilule, Icone, Marque, useClasseBody } from '../composants/commun.tsx'
 import Historique, { type Apercu } from '../composants/Historique.tsx'
 import Liens from '../composants/Liens.tsx'
@@ -194,9 +194,8 @@ export default function Editeur() {
     setPanneau(false)
   }
 
-  async function changerMode() {
-    if (!doc) return
-    const mode = doc.modeTelechargement === 'direct' ? 'version' : 'direct'
+  async function changerMode(mode: ModeTelechargement) {
+    if (!doc || mode === (doc.modeTelechargement ?? 'version')) return
     try { await api.changerMode(docId, mode); setDoc({ ...doc, modeTelechargement: mode }) } catch { /* message déjà affiché par l'API */ }
   }
 
@@ -253,10 +252,13 @@ export default function Editeur() {
             ))}
           </div>
           {editable && doc && (
-            <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={changerMode}
-              title={doc.modeTelechargement === 'direct' ? 'Les liens donnent le document tel qu’il est au moment du clic. Cliquer pour donner la dernière version déclarée.' : 'Les liens donnent la dernière version déclarée. Cliquer pour donner le document en temps réel.'}>
-              <Icone nom="telecharger" />{doc.modeTelechargement === 'direct' ? 'Téléchargement : temps réel' : 'Téléchargement : dernière version'}
-            </button>
+            <label className="mode-telechargement" title="Ce que reçoivent les visiteurs qui téléchargent par un lien">
+              <Icone nom="telecharger" /><span>Téléchargement</span>
+              <select value={doc.modeTelechargement ?? 'version'} onChange={(e) => changerMode(e.target.value as ModeTelechargement)} aria-label="Mode de téléchargement des liens">
+                <option value="version">Dernière version déclarée</option>
+                <option value="direct">Temps réel</option>
+              </select>
+            </label>
           )}
           {compact && <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={() => setPanneau(true)}><Icone nom="historique" />Versions</button>}
           <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={() => setFenetre('liens')}><Icone nom="lien" />Liens</button>
