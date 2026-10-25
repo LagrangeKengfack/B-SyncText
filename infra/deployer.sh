@@ -71,7 +71,11 @@ else
   echo "Instance pas encore joignable par SSM : le code est installé à son premier démarrage."
 fi
 
-etape "7. Budget (alertes à 5, 10 et 20 USD)"
+etape "7. Identité e-mail SES (vérifiée une fois, par un lien reçu par e-mail)"
+aws sesv2 get-email-identity --email-identity "$EMAIL" >/dev/null 2>&1 || \
+  aws sesv2 create-email-identity --email-identity "$EMAIL" >/dev/null
+
+etape "8. Budget (alertes à 5, 10 et 20 USD)"
 if ! aws budgets describe-budget --account-id "$COMPTE" --budget-name bsynctext >/dev/null 2>&1; then
   aws budgets create-budget --account-id "$COMPTE" \
     --budget '{"BudgetName":"bsynctext","BudgetType":"COST","TimeUnit":"MONTHLY","BudgetLimit":{"Amount":"20","Unit":"USD"}}' \

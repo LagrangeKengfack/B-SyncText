@@ -16,7 +16,7 @@ Toute l'infrastructure est décrite dans [`infra/template.yaml`](../../infra/tem
 | API | API Gateway HTTP, limite de 3 000 requêtes/s | au-delà : 429, que la page traduit en « Patientez » |
 | Données | 9 tables DynamoDB à la demande, 2 buckets S3 privés et chiffrés (site, données) | expiration automatique (TTL) des crédits, du journal et des compteurs |
 | Diffusion | CloudFront, fonction de réécriture des chemins de l'application, accès au bucket par OAC | une seule adresse HTTPS |
-| Hors pile | bucket d'artefacts (code), 3 secrets SSM, budget de 20 USD avec alertes à 5, 10 et 20 USD | créés par `deployer.sh` : le budget n'existe pas dans CloudFormation pour eu-north-1, et les secrets ne doivent pas apparaître dans le gabarit |
+| Hors pile | bucket d'artefacts (code), 3 secrets SSM, identité e-mail SES, budget de 20 USD avec alertes à 5, 10 et 20 USD | créés par `deployer.sh` : le budget n'existe pas dans CloudFormation pour eu-north-1, et les secrets ne doivent pas apparaître dans le gabarit |
 
 ## 2. Droits (un rôle par composant)
 
@@ -29,14 +29,15 @@ Toute l'infrastructure est décrite dans [`infra/template.yaml`](../../infra/tem
 
 Aucune clé d'accès n'existe : chaque composant utilise son rôle, et le déploiement utilise la session `aws login` de l'auteur.
 
-## 3. Déploiement, en sept étapes (`deployer.sh`)
+## 3. Déploiement, en huit étapes (`deployer.sh`)
 1. Création des secrets SSM, une seule fois.
 2. Création du bucket d'artefacts.
 3. Construction du code (`npm run build`), un fichier par composant (esbuild), téléversement.
 4. Création ou mise à jour de la pile CloudFormation (`aws cloudformation deploy`).
 5. Copie de l'application web dans S3, puis invalidation du cache CloudFront.
 6. Mise à jour du serveur d'édition par SSM Run Command, sans SSH.
-7. Création du budget.
+7. Création de l'identité e-mail SES (vérifiée une fois par un lien).
+8. Création du budget.
 
 ## 4. Coût d'oubli
 Si l'on oubliait de supprimer la pile, elle coûterait environ **0,55 USD par jour** :
