@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CREDIT_JOURNALIER, DUREE_BLOCAGE_MS, DUREE_JETON_MS, SEUIL_REFUS,
   dateHeureWat, estEmailValide, estProprietaire, jourWat, msDuSeq, normaliserEmail, nouveauSeq, nouvelId,
-  numeroVersion, peutRenoncer, peutRetirerRole, prochaineRecharge, signerJeton, successeurPrincipal, verifierJeton,
+  numeroVersion, incrementer, niveauEffectif, estFormatVersion, peutRenoncer, peutRetirerRole, prochaineRecharge, signerJeton, successeurPrincipal, verifierJeton,
 } from './index.js';
 
 describe('constantes', () => {
@@ -97,10 +97,17 @@ describe('jeton signé', () => {
 
 describe('numéros de version', () => {
   it('formes', () => {
-    expect(numeroVersion(3, 0)).toBe('v3');
-    expect(numeroVersion(3, 1)).toBe('v3.1');
-    expect(numeroVersion(0, 1)).toBe('v0.1');
-    expect(numeroVersion(12, 10)).toBe('v12.10');
+    expect(numeroVersion('v.x', [3, 0, 0])).toBe('v3');
+    expect(numeroVersion('v.x.x', [3, 1, 9])).toBe('v3.1');
+    expect(numeroVersion('v.x.x.x', [0, 1, 2])).toBe('v0.1.2');
+    expect(numeroVersion('v.x.x', [12, 10])).toBe('v12.10');
+    expect(incrementer([1, 4, 2], undefined, 'v.x.x')).toEqual([1, 5, 0]);
+    expect(incrementer([1, 4, 2], 1, 'v.x.x')).toEqual([2, 0, 0]);
+    expect(incrementer([1, 4, 2], 2, 'v.x.x.x')).toEqual([1, 5, 0]);
+    expect(incrementer([0, 0, 0], 9, 'v.x')).toEqual([1, 0, 0]);
+    expect(niveauEffectif(undefined, 'v.x.x.x')).toBe(3);
+    expect(estFormatVersion('v.x')).toBe(true);
+    expect(estFormatVersion('v1')).toBe(false);
   });
 });
 
