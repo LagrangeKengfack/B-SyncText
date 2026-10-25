@@ -30,15 +30,6 @@ describe('versions (H-06)', () => {
     expect(await lireEtatVersion(deps, 'doc1', String(versions[0]!.versionId))).toEqual(etat);
   });
 
-  it('limite la création manuelle à une par minute et par document', async () => {
-    const { deps, horloge } = avecDocument();
-    expect(await autoriserVersionManuelle(deps, 'doc1')).toBe(true);
-    expect(await autoriserVersionManuelle(deps, 'doc1')).toBe(false);
-    expect(await autoriserVersionManuelle(deps, 'doc2')).toBe(true);
-    horloge.ms += 60_000;
-    expect(await autoriserVersionManuelle(deps, 'doc1')).toBe(true);
-  });
-
   it('restauration : une modification de plus qui remet le contenu, appliquée chez tous', () => {
     const serveur = docInitial();
     zoneTexte(serveur).insert(0, 'version un');

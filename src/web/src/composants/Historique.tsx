@@ -80,7 +80,7 @@ export default function Historique({ versions, format, dernierNumero, membres, a
         <form className="champ" onSubmit={creer}>
           <label htmlFor="nom-version">Créer une version</label>
           <div className="champ__ligne">
-            <input id="nom-version" placeholder="Nom" aria-describedby="num-aide" value={nom} onChange={(e) => setNom(e.target.value)} />
+            <input id="nom-version" placeholder="Nom (optionnel)" aria-describedby="num-aide" value={nom} onChange={(e) => setNom(e.target.value)} />
             <button className="bouton bouton--sombre bouton--petit" type="submit"><Icone nom="plus" />Créer</button>
           </div>
           {profondeur > 1 && (

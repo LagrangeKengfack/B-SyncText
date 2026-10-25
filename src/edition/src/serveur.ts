@@ -12,7 +12,6 @@ import { majPresence } from './presence.js';
 import { enregistrerRefus, lireBlocage } from './refus.js';
 import { SuiviDocument } from './suivi.js';
 import {
-  autoriserVersionManuelle,
   calculerRestauration,
   creerVersion,
   lireEtatVersion,
@@ -190,9 +189,6 @@ export function creerServeur(o: OptionsServeur) {
   async function creerVersionManuelle(connection: Connection<ContexteConnexion>, doc: Document, suivi: SuiviDocument, nom: unknown, niveau: unknown) {
     const libelle = typeof nom === 'string' ? nom.trim().slice(0, 120) : '';
     const chiffre = typeof niveau === 'number' ? niveau : undefined;
-    if (!(await autoriserVersionManuelle(d, doc.name))) {
-      return envoyer(connection, { type: 'erreur', message: 'Une version par minute au plus pour ce document.' });
-    }
     const v = await suivi.executerSeul(() =>
       versionDocument(doc.name, doc, suivi, 'manuelle', connection.context.email, libelle || undefined, chiffre),
     );
