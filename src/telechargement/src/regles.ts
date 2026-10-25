@@ -86,9 +86,9 @@ export function estRefusCondition(e: unknown): boolean {
   return false;
 }
 
-/** Pied de page d'un exemplaire. */
-export function piedDePage(k: number, n: number, numeroVersion: string, maintenant: number): string {
-  return `Exemplaire ${k} / ${n} · version ${numeroVersion} · généré le ${dateHeureWat(maintenant)} (WAT)`;
+/** Numéro d'exemplaire imprimé en pied de page (sans date ni heure). */
+export function libelleExemplaire(k: number, n: number): string {
+  return `Exemplaire ${k} / ${n}`;
 }
 
 /** Nom de fichier sûr : `<titre>-exemplaire-<k>.pdf`. */

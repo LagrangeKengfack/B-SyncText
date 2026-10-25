@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CacheEpuises, courrielEpuise, estErreurDebit, estRefusCondition, nomFichier, piedDePage, trouverRoute,
+  CacheEpuises, courrielEpuise, estErreurDebit, estRefusCondition, nomFichier, libelleExemplaire, trouverRoute,
 } from './regles.js';
 
 const L = 'a'.repeat(22);
@@ -36,9 +36,8 @@ describe('erreurs DynamoDB', () => {
 });
 
 describe('textes', () => {
-  it('pied de page du contrat', () => {
-    expect(piedDePage(137, 500, 'v3.1', Date.UTC(2026, 9, 25, 23, 5)))
-      .toBe('Exemplaire 137 / 500 · version v3.1 · généré le 26/10/2026 00:05 (WAT)');
+  it('libellé d\'exemplaire du pied de page', () => {
+    expect(libelleExemplaire(137, 500)).toBe('Exemplaire 137 / 500');
   });
   it('nom de fichier sans accents ni caractères gênants', () => {
     expect(nomFichier('Été "2026" / plan', 4)).toBe('Ete-2026-plan-exemplaire-4.pdf');
