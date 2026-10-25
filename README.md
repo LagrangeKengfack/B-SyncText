@@ -97,6 +97,14 @@ npm run couverture     # avec la couverture
 ```
 Les tests de concurrence et de charge, qui portent les codes T-01 à T-07, visent l'application déployée. Ils sont décrits dans **[tests/README.md](tests/README.md)**.
 
+## Tableau de bord de l'association
+
+Adresse : `https://<distribution>.cloudfront.net/association`. La page demande un **code administrateur**, créé au déploiement et rangé dans le coffre de paramètres d'AWS (jamais dans le dépôt). La personne qui a déployé le lit avec :
+```
+aws ssm get-parameter --name /bsynctext/code-admin --with-decryption --query Parameter.Value --output text
+```
+puis le transmet à l'association. Toute personne qui connaît ce code peut consulter le tableau de bord (lecture seule) ; dix codes faux en une minute bloquent les essais pendant une minute.
+
 ## Supprimer
 
 ```
