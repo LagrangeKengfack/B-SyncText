@@ -1,8 +1,8 @@
 /* Compléments propres à l'application (les maquettes sont statiques) : Tiptap, curseurs, fenêtres fixes. */
 
 /* Fenêtre ou panneau fixé au-dessus de la page */
-.voile-fixe { position: fixed; inset: 0; z-index: 60; overflow-y: auto; }
-.voile-fixe .fenetre { margin-bottom: var(--e-5); }
+.voile-fixe { position: fixed; inset: 0; z-index: 60; overflow-y: auto; display: flex; align-items: flex-start; justify-content: center; padding: 10vh var(--e-4) var(--e-5); }
+.voile-fixe .fenetre { margin: 0 auto var(--e-5); }
 .voile-fixe.scene__voile--droite { padding: 0; }
 
 /* Éditeur : la barre flottante reste visible, la page A4 contient l'éditeur Tiptap */
@@ -28,3 +28,9 @@
 .pile-liens { display: grid; gap: var(--e-3); }
 .rangee__titre .code { white-space: normal; }
 .rangee__chiffre .etat { white-space: nowrap; }
+
+/* Accueil : le logo et le nom restent lisibles par-dessus les bandes décoratives. */
+.accueil .marque { background: rgb(255 255 255 / 0.88); backdrop-filter: blur(6px); padding: 6px 14px 6px 6px; border-radius: 999px; box-shadow: 0 6px 18px -10px rgb(32 26 27 / 0.5); }
+/* Page A4 : le texte reste dans les marges, même un mot très long ou un collage sans espace. */
+.a4 .ProseMirror { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; }
+.a4 .ProseMirror * { max-width: 100%; }
