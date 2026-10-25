@@ -17,10 +17,11 @@ PAQUETS="infra/paquets"
 etape() { echo; echo "== $*"; }
 
 etape "1. Secrets dans SSM (créés une seule fois, jamais dans le dépôt)"
-secret() {
-  aws ssm get-parameter --name "$1" >/dev/null 2>&1 || \
-    aws ssm put-parameter --name "$1" --type SecureString \
-      --value "$(openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | head -c "$2")" >/dev/null
+secret() {   # crée le secret s'il manque ; si la création échoue (secret déjà là, réseau), on vérifie seulement qu'il existe
+  aws ssm get-parameter --name "$1" >/dev/null 2>&1 && return 0
+  aws ssm put-parameter --name "$1" --type SecureString \
+    --value "$(openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | head -c "$2")" >/dev/null 2>&1 \
+    || aws ssm get-parameter --name "$1" >/dev/null
 }
 secret /bsynctext/secret-session 48
 secret /bsynctext/secret-origine 40
