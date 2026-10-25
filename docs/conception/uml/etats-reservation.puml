@@ -1,0 +1,12 @@
+@startuml etats-reservation
+' Réservation d'un exemplaire (ticket à usage unique) — C-1, R-02, H-07
+skinparam shadowing false
+hide empty description
+[*] --> Reservee : demande acceptée\n[disponibles > 0] / disponibles - 1
+Reservee : ticket valable 60 s
+Reservee --> Comptee : fichier demandé avec le ticket\n[avant expiration] / comptes + 1, numéro k
+Reservee --> Expiree : 60 s écoulées, reprise par\nun visiteur qui patiente / disponibles + 1
+Comptee : ticket consommé\n(toute réutilisation → 410)
+Comptee --> [*]
+Expiree --> [*]
+@enduml

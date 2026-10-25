@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>E-01 Entrée — maquette B-SyncText</title>
+  <link rel="icon" href="../favicon.svg">
+  <link rel="stylesheet" href="../charte.css">
+  <link rel="stylesheet" href="icones.css">
+  <link rel="stylesheet" href="maquettes.css">
+</head>
+<body class="fond-degrade">
+
+<div class="maquette-barre">
+  <a href="index.html">← Index</a>
+  <span class="maquette-barre__titre">E-01 · Entrée</span>
+  <div class="maquette-barre__etats" role="group" aria-label="État de l'écran">
+    <button type="button" data-etat-bouton="normal">Normal</button>
+    <button type="button" data-etat-bouton="invalide">E-mail invalide</button>
+    <button type="button" data-etat-bouton="invitation">Arrivée par invitation</button>
+    <button type="button" data-etat-bouton="expiree">Invitation expirée</button>
+  </div>
+</div>
+
+<main class="conteneur conteneur--etroit page-centree">
+  <div class="pile pile--l">
+    <div class="centre pile--s" style="display: grid; justify-items: center">
+      <span class="marque marque--grande"><img src="../logo-clair.svg" alt="">B-SyncText</span>
+      <p class="slogan">Créez sans effort. Modifiez en temps réel. Synchronisez en un instant.</p>
+    </div>
+
+    <div class="carte pile">
+      <!-- Invitation valable -->
+      <div class="bandeau" data-etats="invitation">
+        <i class="ico ico-document"></i>
+        <div class="bandeau__corps">
+          <strong>Vous êtes invité à écrire dans « Le Bulletin — Octobre 2026 »</strong>
+          <span>Invitation de Camille N. Entrez votre nom et votre e-mail pour rejoindre le document.</span>
+        </div>
+      </div>
+      <!-- Invitation expirée -->
+      <div class="bandeau bandeau--erreur" role="alert" data-etats="expiree">
+        <i class="ico ico-alerte"></i>
+        <div class="bandeau__corps">
+          <strong>Cette invitation a expiré</strong>
+          <span>Le lien a été remplacé par un nouveau. Demandez à Camille N. de vous envoyer le lien à jour. Vous pouvez quand même entrer pour retrouver vos documents.</span>
+        </div>
+      </div>
+
+      <h1 style="margin: 0; font-size: var(--t-xl)" data-etats="normal invalide">Entrer dans B-SyncText</h1>
+      <h1 style="margin: 0; font-size: var(--t-xl)" data-etats="invitation">Rejoindre le document</h1>
+      <h1 style="margin: 0; font-size: var(--t-xl)" data-etats="expiree">Entrer dans B-SyncText</h1>
+
+      <form class="pile" onsubmit="return false" novalidate>
+        <div class="champ">
+          <label for="nom">Votre nom</label>
+          <input id="nom" name="nom" autocomplete="name" value="Camille Nkoulou">
+          <span class="champ__aide">Ce nom est affiché aux autres rédacteurs.</span>
+        </div>
+
+        <div class="champ" data-etats="normal invitation expiree">
+          <label for="mail">Votre e-mail</label>
+          <input id="mail" name="mail" type="email" autocomplete="email" value="camille.nkoulou@univ-exemple.fr" aria-describedby="mail-aide">
+          <span class="champ__aide" id="mail-aide">Il sert d'identifiant. Aucun mot de passe, aucun e-mail envoyé.</span>
+        </div>
+        <div class="champ champ--erreur" data-etats="invalide">
+          <label for="mail2">Votre e-mail</label>
+          <input id="mail2" name="mail" type="email" autocomplete="email" value="camille.nkoulou@univ" aria-invalid="true" aria-describedby="mail-err">
+          <span class="champ__erreur" id="mail-err"><i class="ico ico-alerte"></i> Cet e-mail est incomplet. Exemple : prenom.nom@univ-exemple.fr</span>
+        </div>
+
+        <button class="bouton bouton--principal bouton--plein" type="submit" data-etats="normal invitation expiree">
+          <span data-etats="normal expiree">Entrer</span><span data-etats="invitation">Entrer et rejoindre</span>
+        </button>
+        <button class="bouton bouton--principal bouton--plein" type="submit" disabled aria-disabled="true" data-etats="invalide">Entrer</button>
+      </form>
+
+      <p class="tres-petit doux centre" style="margin: 0">Vos documents sont retrouvés grâce à votre e-mail, sur tous vos appareils.</p>
+    </div>
+  </div>
+</main>
+
+<script src="maquettes.js"></script>
+</body>
+</html>

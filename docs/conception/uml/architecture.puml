@@ -1,0 +1,51 @@
+@startuml architecture
+' Architecture de déploiement — voir 03-architecture.md
+skinparam shadowing false
+skinparam componentStyle rectangle
+left to right direction
+
+actor "Rédacteur" as R
+actor "Visiteur" as V
+actor "Association" as A
+
+cloud "AWS eu-north-1" {
+  node "CloudFront\n(HTTPS, une seule adresse)" as CF
+
+  rectangle "Fichiers statiques" {
+    storage "S3 « site »\n(application web)" as S3W
+  }
+
+  rectangle "Chemin téléchargement et API (serverless)" {
+    component "API Gateway\n(HTTP API, limitation de débit)" as APIGW
+    component "Lambda « api »\n(session, documents, liens,\nversions, tableau de bord)" as LAPI
+    component "Lambda « telechargement »\n(réserver, servir le PDF)\nconcurrence réservée 250" as LDL
+  }
+
+  rectangle "VPC — sous-réseau public" {
+    node "EC2 t4g.small\nserveur d'édition temps réel\n(Node.js + Hocuspocus/Yjs, systemd)" as EC2
+  }
+
+  database "DynamoDB\n(à la demande)" as DDB
+  storage "S3 « donnees »\n(états, versions, PDF de base)" as S3D
+  component "SES\n(e-mail lien épuisé)" as SES
+  component "SSM Parameter Store\n(secret de session, code admin)" as SSM
+}
+
+R --> CF
+V --> CF
+A --> CF
+CF --> S3W : /*
+CF --> APIGW : /api/*
+CF --> EC2 : /collab (WebSocket)
+APIGW --> LAPI
+APIGW --> LDL
+EC2 --> DDB : journal des modifications,\ncrédit (écritures conditionnelles)
+EC2 --> S3D : états compactés, versions
+LAPI --> DDB
+LAPI --> S3D
+LDL --> DDB : réservation et comptage\n(écritures conditionnelles)
+LDL --> S3D : PDF de base
+LDL --> SES
+LAPI ..> SSM
+EC2 ..> SSM
+@enduml

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>E-05 Historique — maquette B-SyncText</title>
+  <link rel="icon" href="../favicon.svg">
+  <link rel="stylesheet" href="../charte.css">
+  <link rel="stylesheet" href="icones.css">
+  <link rel="stylesheet" href="maquettes.css">
+</head>
+<body>
+
+<div class="maquette-barre">
+  <a href="index.html">← Index</a>
+  <span class="maquette-barre__titre">E-05 · Historique (panneau, téléphone)</span>
+  <div class="maquette-barre__etats" role="group" aria-label="État de l'écran">
+    <button type="button" data-etat-bouton="liste">Liste</button>
+    <button type="button" data-etat-bouton="apercu">Aperçu (propriétaire)</button>
+    <button type="button" data-etat-bouton="apercu-membre">Aperçu (membre)</button>
+    <button type="button" data-etat-bouton="confirmation">Confirmation</button>
+  </div>
+</div>
+
+<div class="scene">
+  <div class="scene__fond" aria-hidden="true">
+    <div class="squelette squelette--titre"></div>
+    <div class="squelette"></div><div class="squelette" style="width: 92%"></div><div class="squelette" style="width: 80%"></div>
+    <div class="squelette"></div><div class="squelette" style="width: 70%"></div>
+  </div>
+
+  <div class="scene__voile scene__voile--droite">
+    <aside class="panneau-droit" aria-labelledby="titre-histo">
+      <div class="fenetre__tete">
+        <h2 id="titre-histo" style="margin: 0; font-size: var(--t-xl)">Historique</h2>
+        <a class="bouton bouton--discret bouton--petit" href="e-03-editeur.html" aria-label="Fermer"><i class="ico ico-fermer"></i></a>
+      </div>
+
+      <!-- Créer une version nommée -->
+      <form class="champ" onsubmit="return false" data-etats="liste apercu apercu-membre">
+        <label for="nom-version">Créer une version (sera numérotée v4)</label>
+        <div class="champ__ligne">
+          <input id="nom-version" placeholder="Ex. : avant relecture finale">
+          <button class="bouton bouton--secondaire" type="submit"><i class="ico ico-plus"></i>Créer</button>
+        </div>
+      </form>
+
+      <!-- Liste des versions -->
+      <ul class="liste-docs" style="gap: var(--e-2)" aria-label="Versions du document" data-etats="liste apercu apercu-membre">
+        <li><button class="version" type="button">
+          <span class="version__nom">Version actuelle</span>
+          <span class="petit doux">Aujourd'hui, 18:01 · Camille N., Idriss M., Sarah L.</span></button></li>
+        <li><button class="version" type="button" aria-current="true" data-etats="apercu apercu-membre">
+          <span class="version__nom">v3 — Avant relecture finale</span>
+          <span class="petit doux">Aujourd'hui, 17:40 · Camille N.</span></button>
+          <button class="version" type="button" data-etats="liste">
+          <span class="version__nom">v3 — Avant relecture finale</span>
+          <span class="petit doux">Aujourd'hui, 17:40 · Camille N.</span></button></li>
+        <li><button class="version" type="button">
+          <span class="version__nom">v3.1 — Automatique</span>
+          <span class="petit doux">Aujourd'hui, 17:10 · Idriss M., Amina D.</span></button></li>
+        <li><button class="version" type="button">
+          <span class="version__nom">v2 — Restauration de v1</span>
+          <span class="petit doux">Hier, 22:05 · Camille N.</span></button></li>
+        <li><button class="version" type="button">
+          <span class="version__nom">v1.1 — Automatique</span>
+          <span class="petit doux">Hier, 21:14 · Sarah L.</span></button></li>
+      </ul>
+
+      <!-- Aperçu en lecture seule -->
+      <section class="pile--s" data-etats="apercu apercu-membre confirmation" aria-label="Aperçu de la version">
+        <div class="ligne ligne--entre"><strong>Aperçu · v3 — Avant relecture finale</strong><span class="etat etat--info"><i class="ico ico-oeil"></i>Lecture seule</span></div>
+        <div class="apercu">
+          <p><strong>Édito : une rentrée qui se lit</strong></p>
+          <p>Cette année encore, la rentrée a eu son lot de surprises : la nouvelle salle de lecture, les files d'attente du restaurant universitaire et ce besoin de se raconter.<ins> Ce numéro est le fruit de trois cents plumes.</ins></p>
+          <p><del>Un étudiant a rédigé la moitié de son mémoire à la bibliothèque, entre deux et quatre heures du matin.</del></p>
+        </div>
+        <p class="tres-petit doux" style="margin: 0">Vert : ajouté depuis cette version · rouge : retiré depuis cette version.</p>
+      </section>
+
+      <!-- Restaurer : propriétaires seulement -->
+      <div class="pile--s" data-etats="apercu">
+        <button class="bouton bouton--danger bouton--plein" type="button"><i class="ico ico-restaurer"></i>Restaurer v3</button>
+        <span class="tres-petit doux">Le contenu redevient celui de cette version pour tous les participants connectés. L'historique est conservé et la restauration ne consomme pas de crédit.</span>
+      </div>
+      <div class="bandeau" data-etats="apercu-membre">
+        <i class="ico ico-info"></i>
+        <div class="bandeau__corps"><strong>Seuls les propriétaires peuvent restaurer</strong><span>Vous pouvez lire cette version et en créer une nouvelle. Demandez à Camille N. ou Idriss M. de restaurer.</span></div>
+      </div>
+
+      <!-- Confirmation -->
+      <div class="bandeau bandeau--attente" role="alertdialog" aria-labelledby="conf-titre" data-etats="confirmation">
+        <i class="ico ico-alerte"></i>
+        <div class="bandeau__corps">
+          <strong id="conf-titre">Restaurer v3 pour tout le monde ?</strong>
+          <span>Les 4 personnes connectées verront le texte changer tout de suite. Rien n'est perdu : la version actuelle reste dans l'historique et vous pourrez la restaurer.</span>
+          <div class="ligne" style="margin-top: var(--e-2)">
+            <button class="bouton bouton--principal bouton--petit" type="button">Oui, restaurer</button>
+            <button class="bouton bouton--secondaire bouton--petit" type="button">Annuler</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="maquettes.js"></script>
+</body>
+</html>

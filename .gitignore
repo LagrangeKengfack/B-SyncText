@@ -1,0 +1,20 @@
+# Secrets et accès : ne jamais committer
+*.pem
+.env
+.env.*
+.aws/
+
+# Infrastructure
+*.tfstate
+*.tfstate.*
+infra/paquets/
+
+# Dépendances et constructions
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Divers
+.DS_Store
+*.log

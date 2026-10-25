@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>E-08 Accès association — maquette B-SyncText</title>
+  <link rel="icon" href="../favicon.svg">
+  <link rel="stylesheet" href="../charte.css">
+  <link rel="stylesheet" href="icones.css">
+  <link rel="stylesheet" href="maquettes.css">
+</head>
+<body class="fond-degrade">
+
+<div class="maquette-barre">
+  <a href="index.html">← Index</a>
+  <span class="maquette-barre__titre">E-08 · Accès association</span>
+  <div class="maquette-barre__etats" role="group" aria-label="État de l'écran">
+    <button type="button" data-etat-bouton="normal">Normal</button>
+    <button type="button" data-etat-bouton="faux">Code faux</button>
+  </div>
+</div>
+
+<main class="conteneur conteneur--etroit page-centree">
+  <div class="pile pile--l">
+    <div class="centre" style="display: grid; justify-items: center"><span class="marque marque--grande"><img src="../logo-clair.svg" alt="">B-SyncText</span></div>
+    <div class="carte pile">
+      <h1 style="margin: 0; font-size: var(--t-xl)"><i class="ico ico-cadenas"></i> Accès association</h1>
+      <p class="doux" style="margin: 0">Réservé à l'équipe de l'association : saisissez le code administrateur pour voir le tableau de bord.</p>
+
+      <div class="bandeau bandeau--erreur" role="alert" data-etats="faux">
+        <i class="ico ico-alerte"></i>
+        <div class="bandeau__corps"><strong>Code incorrect</strong><span>Vérifiez le code et réessayez. Après plusieurs essais ratés, l'accès est suspendu quelques minutes.</span></div>
+      </div>
+
+      <form class="pile" onsubmit="return false">
+        <div class="champ" data-etats="normal">
+          <label for="code">Code administrateur</label>
+          <input id="code" type="password" autocomplete="off" autofocus>
+        </div>
+        <div class="champ champ--erreur" data-etats="faux">
+          <label for="code2">Code administrateur</label>
+          <input id="code2" type="password" autocomplete="off" value="motdepasse" aria-invalid="true">
+        </div>
+        <a class="bouton bouton--principal bouton--plein" href="e-09-tableau-de-bord.html">Accéder au tableau de bord</a>
+      </form>
+      <p class="tres-petit doux centre" style="margin: 0">Le tableau de bord est en lecture seule.</p>
+    </div>
+  </div>
+</main>
+
+<script src="maquettes.js"></script>
+</body>
+</html>

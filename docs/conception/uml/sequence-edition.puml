@@ -1,0 +1,26 @@
+@startuml sequence-edition
+' UC-05 — une modification acceptée (C-2, C-4)
+skinparam shadowing false
+autonumber
+actor "Rédacteur A" as A
+participant "Navigateur A\n(Tiptap + Yjs)" as NA
+participant "EC2\nHocuspocus" as E
+database DynamoDB as D
+participant "Navigateur B" as NB
+
+A -> NA : tape « bonjour »
+NA -> NA : appliqué localement,\nindicateur « Synchronisation… »
+NA -> E : mise à jour Yjs (WebSocket)
+E -> E : compte les caractères insérés (n = 7)
+E -> D : Credits : restant - 7\nSI restant >= 7 (créé à 10 000 s'il n'existe pas)
+alt crédit suffisant
+  E -> D : Journal : enregistre la mise à jour
+  E -> E : applique au document en mémoire
+  E --> NA : confirmation + crédit restant\n(« Enregistré »)
+  E --> NB : diffuse la mise à jour
+else crédit insuffisant
+  E --> NA : refus { raison: "credit", restant }
+  NA -> NA : retire la modification\n(resynchronisation depuis le serveur)
+  E -> D : Compteurs : refus + 1 (blocage si 20 en 1 min)
+end
+@enduml

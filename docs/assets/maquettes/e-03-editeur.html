@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>E-03 Éditeur — maquette B-SyncText</title>
+  <link rel="icon" href="../favicon.svg">
+  <link rel="stylesheet" href="../charte.css">
+  <link rel="stylesheet" href="icones.css">
+  <link rel="stylesheet" href="maquettes.css">
+</head>
+<body>
+
+<div class="maquette-barre">
+  <a href="index.html">← Index</a>
+  <span class="maquette-barre__titre">E-03 · Éditeur</span>
+  <div class="maquette-barre__etats" role="group" aria-label="État de l'écran">
+    <button type="button" data-etat-bouton="normal">Normal, à plusieurs</button>
+    <button type="button" data-etat-bouton="credit-faible">Crédit faible</button>
+    <button type="button" data-etat-bouton="refus">Insertion refusée</button>
+    <button type="button" data-etat-bouton="hors-ligne">Hors ligne</button>
+    <button type="button" data-etat-bouton="bloque">Rédacteur bloqué</button>
+    <button type="button" data-etat-bouton="apercu">Aperçu d'une version (propriétaire)</button>
+    <button type="button" data-etat-bouton="apercu-membre">Aperçu (membre)</button>
+    <button type="button" data-etat-bouton="confirmer">Confirmer la restauration</button>
+  </div>
+</div>
+
+<header class="entete-app">
+  <div class="entete-app__contenu">
+    <a class="marque" href="e-02-mes-documents.html"><img src="../favicon.svg" alt="">B-SyncText</a>
+    <a class="petit" href="e-02-mes-documents.html">← Mes documents</a>
+    <span class="espace"></span>
+    <span class="pastille" style="--c: var(--presence-1)"><span class="avatar" style="--c: var(--presence-1)">CN</span>Camille N.</span>
+  </div>
+</header>
+
+<main class="editeur">
+  <!-- Titre, présents, actions -->
+  <div class="editeur__haut">
+    <div class="editeur__haut-contenu">
+      <div class="ligne ligne--entre">
+        <div class="pile--s" style="flex: 1; min-width: 220px">
+          <input class="editeur__titre" data-desactive-si="bloque apercu apercu-membre confirmer" value="Le Bulletin — Numéro d'octobre 2026" aria-label="Titre du document">
+          <span class="statut statut--ok" data-etats="normal refus apercu apercu-membre confirmer"><i class="ico ico-enregistre"></i>Enregistré</span>
+          <span class="statut statut--attente" data-etats="credit-faible"><i class="ico ico-synchro"></i>Synchronisation…</span>
+          <span class="statut statut--erreur" data-etats="hors-ligne"><i class="ico ico-hors-ligne"></i>Hors ligne · 3 modifications en attente</span>
+          <span class="statut statut--erreur" data-etats="bloque"><i class="ico ico-cadenas"></i>Lecture seule</span>
+        </div>
+        <div class="ligne">
+          <a class="bouton bouton--secondaire bouton--petit" href="e-06-liens.html"><i class="ico ico-lien"></i>Liens</a>
+          <a class="bouton bouton--principal bouton--petit" href="e-04-partager.html"><i class="ico ico-partager"></i>Partager</a>
+        </div>
+      </div>
+      <div class="pastilles" aria-label="Personnes connectées dans ce document">
+        <span class="pastille" style="--c: var(--presence-1)"><span class="avatar" style="--c: var(--presence-1)">CN</span>Camille N. (vous)</span>
+        <span class="pastille" style="--c: var(--presence-2)"><span class="avatar" style="--c: var(--presence-2)">IM</span>Idriss M.</span>
+        <span class="pastille" style="--c: var(--presence-3)"><span class="avatar" style="--c: var(--presence-3)">SL</span>Sarah L.</span>
+        <span class="pastille" style="--c: var(--presence-4)"><span class="avatar" style="--c: var(--presence-4)">AD</span>Amina D.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="editeur__corps">
+  <aside class="versions" aria-labelledby="titre-versions">
+    <h2 id="titre-versions"><i class="ico ico-historique"></i> Versions</h2>
+
+    <form class="champ" onsubmit="return false" data-etats="normal credit-faible refus hors-ligne apercu apercu-membre confirmer">
+      <label for="nom-version">Créer une version</label>
+      <div class="champ__ligne">
+        <input id="nom-version" placeholder="Ex. : avant relecture finale" aria-describedby="num-aide">
+        <button class="bouton bouton--secondaire bouton--petit" type="submit"><i class="ico ico-plus"></i>Créer</button>
+      </div>
+      <span class="champ__aide" id="num-aide">Elle sera numérotée <strong>v4</strong>. Ce numéro figure sur les PDF.</span>
+    </form>
+    <p class="champ__erreur" data-etats="bloque"><i class="ico ico-cadenas"></i> Création de version impossible pendant le blocage.</p>
+
+    <ul class="liste-docs" aria-label="Versions du document">
+      <li><button class="version" type="button" data-etats="normal credit-faible refus hors-ligne bloque" aria-current="true">
+        <span class="version__ligne version__ligne--actuelle"><span class="version__num">en cours</span><span class="version__nom">Version actuelle</span></span>
+        <span class="petit doux">Modifié il y a 2 min · Camille N., Idriss M., Sarah L.</span></button>
+        <button class="version" type="button" data-etats="apercu apercu-membre confirmer">
+        <span class="version__ligne version__ligne--actuelle"><span class="version__num">en cours</span><span class="version__nom">Version actuelle</span></span>
+        <span class="petit doux">Modifié il y a 2 min</span></button></li>
+      <li><button class="version" type="button">
+        <span class="version__ligne"><span class="version__num">v3.2</span><span class="version__nom">Automatique</span></span>
+        <span class="petit doux">Aujourd'hui, 17:58 · Idriss M.</span></button></li>
+      <li><button class="version" type="button">
+        <span class="version__ligne"><span class="version__num">v3.1</span><span class="version__nom">Automatique</span></span>
+        <span class="petit doux">Aujourd'hui, 17:50 · Amina D.</span></button></li>
+      <li><button class="version" type="button" data-etats="normal credit-faible refus hors-ligne bloque">
+        <span class="version__ligne"><span class="version__num">v3</span><span class="version__nom">Avant relecture finale</span></span>
+        <span class="petit doux">Aujourd'hui, 17:40 · Camille N.</span></button>
+        <button class="version" type="button" aria-current="true" data-etats="apercu apercu-membre confirmer">
+        <span class="version__ligne"><span class="version__num">v3</span><span class="version__nom">Avant relecture finale</span></span>
+        <span class="petit doux">Aujourd'hui, 17:40 · Camille N.</span></button></li>
+      <li><button class="version" type="button">
+        <span class="version__ligne"><span class="version__num">v2.1</span><span class="version__nom">Automatique</span></span>
+        <span class="petit doux">Hier, 22:05 · Sarah L.</span></button></li>
+      <li><button class="version" type="button">
+        <span class="version__ligne"><span class="version__num">v2</span><span class="version__nom">Première relecture</span></span>
+        <span class="petit doux">Hier, 21:14 · Camille N., Sarah L.</span></button></li>
+      <li><button class="version" type="button">
+        <span class="version__ligne"><span class="version__num">v1</span><span class="version__nom">Premier jet</span></span>
+        <span class="petit doux">Hier, 11:22 · Camille N.</span></button></li>
+    </ul>
+
+    <!-- Restaurer : propriétaires seulement -->
+    <div class="pile--s" data-etats="apercu">
+      <button class="bouton bouton--danger bouton--plein" type="button"><i class="ico ico-restaurer"></i>Restaurer v3</button>
+      <span class="tres-petit doux">Le texte redevient celui de v3 pour tous les connectés. Rien n'est perdu : la version actuelle reste dans l'historique. Aucun crédit consommé.</span>
+    </div>
+    <div class="bandeau" data-etats="apercu-membre">
+      <i class="ico ico-info"></i>
+      <div class="bandeau__corps"><strong>Seuls les propriétaires restaurent</strong><span>Demandez à Camille N. ou Idriss M.</span></div>
+    </div>
+    <div class="bandeau bandeau--attente" role="alertdialog" aria-labelledby="conf-titre" data-etats="confirmer">
+      <i class="ico ico-alerte"></i>
+      <div class="bandeau__corps">
+        <strong id="conf-titre">Restaurer v3 pour tout le monde ?</strong>
+        <span>Les 4 personnes connectées verront le texte changer tout de suite. Une version v4 « Restauration de v3 » sera créée.</span>
+        <div class="ligne" style="margin-top: var(--e-2)">
+          <button class="bouton bouton--principal bouton--petit" type="button">Oui, restaurer</button>
+          <button class="bouton bouton--secondaire bouton--petit" type="button">Annuler</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="editeur__principal">
+  <!-- Bandeaux d'état -->
+  <div style="background: var(--surface-2)">
+    <div class="conteneur pile--s" style="padding-top: var(--e-3); max-width: 1080px">
+      <div class="bandeau bandeau--attente" role="status" data-etats="credit-faible">
+        <i class="ico ico-alerte"></i>
+        <div class="bandeau__corps"><strong>Il vous reste 312 caractères aujourd'hui.</strong>
+          <span>Au-delà, vos insertions seront refusées jusqu'à la recharge, demain à 00:00. Supprimer du texte reste possible.</span></div>
+      </div>
+      <div class="bandeau bandeau--erreur" role="alert" data-etats="hors-ligne">
+        <i class="ico ico-hors-ligne"></i>
+        <div class="bandeau__corps"><strong>Hors ligne</strong>
+          <span>Vos modifications seront envoyées au retour de la connexion. Tant qu'elles ne sont pas enregistrées, elles ne sont pas acceptées.</span></div>
+      </div>
+      <div class="bandeau bandeau--erreur" role="alert" data-etats="bloque">
+        <i class="ico ico-interdit"></i>
+        <div class="bandeau__corps"><strong>Écriture suspendue jusqu'à 14:35</strong>
+          <span>Trop de tentatives refusées en peu de temps. Vous pouvez lire le document et voir les autres écrire ; le blocage se lève tout seul.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barre de mise en forme (Tiptap) -->
+  <div class="outils" role="toolbar" aria-label="Mise en forme">
+    <div class="outils__contenu">
+      <div class="outils__groupe">
+        <select aria-label="Style de paragraphe" data-desactive-si="bloque apercu apercu-membre confirmer">
+          <option>Paragraphe</option><option>Titre 1</option><option selected>Titre 2</option><option>Titre 3</option>
+        </select>
+      </div>
+      <div class="outils__groupe">
+        <button data-desactive-si="bloque apercu apercu-membre confirmer" class="outil" type="button" aria-label="Gras" title="Gras" aria-pressed="false">G</button>
+        <button data-desactive-si="bloque apercu apercu-membre confirmer" class="outil" type="button" aria-label="Italique" title="Italique" aria-pressed="false" style="font-style: italic">I</button>
+        <button data-desactive-si="bloque apercu apercu-membre confirmer" class="outil" type="button" aria-label="Souligné" title="Souligné" aria-pressed="false" style="text-decoration: underline">S</button>
+      </div>
+      <div class="outils__groupe">
+        <button data-desactive-si="bloque apercu apercu-membre confirmer" class="outil" type="button" aria-label="Aligner à gauche" title="Aligner à gauche" aria-pressed="true"><i class="ico ico-gauche"></i></button>
+        <button data-desactive-si="bloque apercu apercu-membre confirmer" class="outil" type="button" aria-label="Centrer" title="Centrer" aria-pressed="false"><i class="ico ico-centre"></i></button>
+        <button data-desactive-si="bloque apercu apercu-membre confirmer" class="outil" type="button" aria-label="Aligner à droite" title="Aligner à droite" aria-pressed="false"><i class="ico ico-droite"></i></button>
+        <button data-desactive-si="bloque apercu apercu-membre confirmer" class="outil" type="button" aria-label="Justifier" title="Justifier" aria-pressed="false"><i class="ico ico-justifie"></i></button>
+      </div>
+      <div class="outils__groupe">
+        <button data-desactive-si="bloque apercu apercu-membre confirmer" class="outil" type="button" aria-label="Liste à puces" title="Liste à puces" aria-pressed="false"><i class="ico ico-liste"></i></button>
+        <button data-desactive-si="bloque apercu apercu-membre confirmer" class="outil" type="button" aria-label="Liste numérotée" title="Liste numérotée" aria-pressed="false"><i class="ico ico-liste-num"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zone de texte -->
+  <div class="feuille-zone">
+
+    <div class="bandeau bandeau-apercu" data-etats="apercu apercu-membre confirmer" role="status">
+      <i class="ico ico-oeil"></i>
+      <div class="bandeau__corps"><strong>Aperçu de v3 — Avant relecture finale (lecture seule)</strong>
+        <span>Vous regardez une ancienne version. Le document en cours n'est pas modifié. <a href="#normal" data-retour>Revenir à la version actuelle</a>.</span></div>
+    </div>
+    <article class="feuille" data-etats="apercu apercu-membre confirmer" aria-readonly="true" aria-label="Contenu de la version v3">
+      <h1 class="centre">Le Bulletin — Octobre 2026</h1>
+      <h2>Édito : une rentrée qui se lit</h2>
+      <p>Cette année encore, la rentrée a eu son lot de surprises : la nouvelle salle de lecture de la bibliothèque, les files d'attente du restaurant universitaire et, surtout, ce besoin de se raconter.</p>
+      <h2>Chronique : la bibliothèque la nuit</h2>
+      <p>On y croise des rédacteurs en pyjama, des thermos fumants et un silence que seuls troublent les claviers. Un étudiant en droit y a rédigé la moitié de son mémoire entre deux et quatre heures du matin.</p>
+    </article>
+    <article class="feuille" data-etats="normal credit-faible refus hors-ligne bloque" data-desactive-si="bloque apercu apercu-membre confirmer" aria-label="Contenu du document">
+      <h1 class="centre">Le Bulletin — Octobre 2026</h1>
+
+      <h2>Édito : une rentrée qui se lit</h2>
+      <p>Cette année encore, la rentrée a eu son lot de surprises : la nouvelle salle de lecture de la bibliothèque, les files d'attente du restaurant universitaire et, surtout, ce besoin de se raconter. Ce numéro est le fruit de <span class="selection" style="--c: var(--presence-3)">trois cents plumes</span>, et chacune a sa<span class="curseur" data-nom="Idriss M." style="--c: var(--presence-2)"></span> manière de dire l'automne.</p>
+
+      <div class="collage-refuse" role="alert" data-etats="refus">
+        <p><i class="ico ico-interdit"></i> <strong>Insertion refusée.</strong> Ce collage fait 520 caractères ; il vous en reste 40 aujourd'hui. Rien n'a été inséré. Recharge demain à 00:00. Vous pouvez coller un extrait plus court ou supprimer du texte.</p>
+      </div>
+
+      <h2>Vie de campus</h2>
+      <ul>
+        <li>Le ciné-club reprend le jeudi à 19 h, salle B12.</li>
+        <li>Tournoi de futsal inter-filières : inscriptions jusqu'au 30 octobre.<span class="curseur" data-nom="Amina D." style="--c: var(--presence-4)"></span></li>
+        <li>Atelier d'écriture avec la romancière Awa Ndiaye, mercredi 4 novembre.</li>
+      </ul>
+
+      <h2>Chronique : la bibliothèque la nuit</h2>
+      <p class="justifie">On y croise des rédacteurs en pyjama, des thermos fumants et un silence que seuls troublent les claviers. Un étudiant en droit y a rédigé, dit-on, la moitié de son mémoire entre deux et quatre heures du matin ; une étudiante en lettres y corrige encore le sien. <span class="curseur" data-nom="Sarah L." style="--c: var(--presence-3)"></span>La lumière des lampes vertes finit par ressembler à celle d'un journal.</p>
+
+      <p class="droite"><em>Rédaction : Camille N., Idriss M., Sarah L., Amina D.</em></p>
+    </article>
+  </div>
+
+  </div><!-- /editeur__principal -->
+  </div><!-- /editeur__corps -->
+
+  <!-- Crédit d'écriture -->
+  <div class="pied-editeur">
+    <div class="pied-editeur__contenu">
+      <div class="credit" data-etats="normal hors-ligne bloque apercu apercu-membre confirmer">
+        <div class="credit__texte"><span>Crédit du jour</span><strong>7 240 / 10 000 caractères</strong></div>
+        <div class="barre" role="img" aria-label="72 % du crédit restant"><div class="barre__plein" style="--p: 72%"></div></div>
+      </div>
+      <div class="credit" data-etats="credit-faible">
+        <div class="credit__texte"><span>Crédit du jour</span><strong>312 / 10 000 caractères</strong></div>
+        <div class="barre barre--danger" role="img" aria-label="3 % du crédit restant"><div class="barre__plein" style="--p: 3%"></div></div>
+      </div>
+      <div class="credit" data-etats="refus">
+        <div class="credit__texte"><span>Crédit du jour</span><strong>40 / 10 000 caractères</strong></div>
+        <div class="barre barre--danger" role="img" aria-label="moins de 1 % du crédit restant"><div class="barre__plein" style="--p: 1%"></div></div>
+      </div>
+      <span class="petit doux"><i class="ico ico-horloge"></i> Recharge demain à 00:00 (WAT)</span>
+      <span class="petit doux" data-etats="bloque">Écriture suspendue jusqu'à 14:35</span>
+    </div>
+  </div>
+</main>
+
+<script src="maquettes.js"></script>
+</body>
+</html>

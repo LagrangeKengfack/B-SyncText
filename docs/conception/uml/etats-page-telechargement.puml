@@ -1,0 +1,17 @@
+@startuml etats-page-telechargement
+' Page publique E-07, côté visiteur — C-5, C-6, BF-13
+skinparam shadowing false
+hide empty description
+[*] --> Demande : ouverture du lien
+Demande --> Pret : 200 « pret »
+Demande --> Patientez : 200 « patientez » ou 429
+Demande --> Epuise : 200 « epuise »
+Demande --> Introuvable : 404
+Patientez --> Demande : nouvel essai après 2 s
+Pret --> Telecharge : téléchargement démarré\n(automatique ou bouton de secours)
+Pret --> Expire : ticket non utilisé en 60 s
+Expire --> Demande : le visiteur reclique
+Telecharge --> [*]
+Epuise --> [*]
+Introuvable --> [*]
+@enduml

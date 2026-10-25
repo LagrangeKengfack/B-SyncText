@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="B-SyncText">
+  <!-- Logo B-SyncText, option 6 (retenue par défaut), thème sombre. -->
+  <rect width="100" height="100" rx="22" fill="#1e1040"/>
+  <g fill="#ffffff"><circle cx="50" cy="10" r="3.4" fill="#ffffff"/><path d="M43.5 22a6.5 5.5 0 0 1 13 0z" fill="#ffffff"/><circle cx="19" cy="25" r="3.4" fill="#ffffff"/><path d="M12.5 37a6.5 5.5 0 0 1 13 0z" fill="#ffffff"/><circle cx="81" cy="25" r="3.4" fill="#ffffff"/><path d="M74.5 37a6.5 5.5 0 0 1 13 0z" fill="#ffffff"/><circle cx="15" cy="60" r="3.4" fill="#ffffff"/><path d="M8.5 72a6.5 5.5 0 0 1 13 0z" fill="#ffffff"/><circle cx="85" cy="60" r="3.4" fill="#ffffff"/><path d="M78.5 72a6.5 5.5 0 0 1 13 0z" fill="#ffffff"/><circle cx="50" cy="83" r="3.4" fill="#ffffff"/><path d="M43.5 95a6.5 5.5 0 0 1 13 0z" fill="#ffffff"/></g>
+  <g fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M34 28H54L66 40V70H34Z"/><path d="M54 28V40H66"/><path d="M41 50H59M41 58H52"/>
+  </g>
+  <path d="M60 56L60 78L65.5 72.5L70 82L75 79.8L70.6 70.8L78 70.5Z" fill="#ff8a63" stroke="#1e1040" stroke-width="2.5" stroke-linejoin="round" paint-order="stroke"/>
+</svg>

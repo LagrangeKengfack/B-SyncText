@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>E-06 Liens de téléchargement — maquette B-SyncText</title>
+  <link rel="icon" href="../favicon.svg">
+  <link rel="stylesheet" href="../charte.css">
+  <link rel="stylesheet" href="icones.css">
+  <link rel="stylesheet" href="maquettes.css">
+</head>
+<body>
+
+<div class="maquette-barre">
+  <a href="index.html">← Index</a>
+  <span class="maquette-barre__titre">E-06 · Liens de téléchargement (fenêtre)</span>
+  <div class="maquette-barre__etats" role="group" aria-label="État de l'écran">
+    <button type="button" data-etat-bouton="creation">Création</button>
+    <button type="button" data-etat-bouton="cree">Lien créé</button>
+    <button type="button" data-etat-bouton="epuise">Lien épuisé</button>
+  </div>
+</div>
+
+<div class="scene">
+  <!-- Éditeur en arrière-plan (schématique) -->
+  <div class="scene__fond" aria-hidden="true">
+    <div class="squelette squelette--titre"></div>
+    <div class="squelette"></div><div class="squelette" style="width: 92%"></div><div class="squelette" style="width: 80%"></div>
+    <div class="squelette"></div><div class="squelette" style="width: 70%"></div>
+  </div>
+
+  <div class="scene__voile">
+    <div class="fenetre" role="dialog" aria-modal="true" aria-labelledby="titre-liens">
+      <div class="fenetre__tete">
+        <h2 id="titre-liens">Liens de téléchargement</h2>
+        <a class="bouton bouton--discret bouton--petit" href="e-03-editeur.html" aria-label="Fermer"><i class="ico ico-fermer"></i></a>
+      </div>
+      <p class="doux petit" style="margin: calc(var(--e-2) * -1) 0 0">Le Bulletin — Numéro d'octobre 2026. Un lien donne toujours le document tel qu'il est au moment du téléchargement.</p>
+
+      <!-- Création -->
+      <form class="pile" onsubmit="return false" data-etats="creation epuise">
+        <div class="champ">
+          <label for="n">Nombre de téléchargements autorisés</label>
+          <div class="champ__ligne">
+            <input id="n" name="n" type="number" min="1" max="10000" value="500" inputmode="numeric" aria-describedby="n-aide">
+            <button class="bouton bouton--principal" type="submit">Créer le lien</button>
+          </div>
+          <span class="champ__aide" id="n-aide">Entre 1 et 10 000. Une fois ce nombre atteint, le lien cesse de fonctionner.</span>
+        </div>
+      </form>
+
+      <!-- Lien créé -->
+      <div class="pile" data-etats="cree">
+        <div class="bandeau bandeau--succes" role="status">
+          <i class="ico ico-check"></i>
+          <div class="bandeau__corps"><strong>Lien créé : 500 téléchargements</strong><span>Partagez cette adresse. Vous serez prévenu par e-mail au dernier téléchargement.</span></div>
+        </div>
+        <div class="champ">
+          <label for="adresse">Adresse à copier</label>
+          <div class="adresse">
+            <span class="code" id="adresse">https://bsynctext.exemple/t/k7Q2xv9Rm4TnY8sA</span>
+            <button class="bouton bouton--principal bouton--petit" type="button"><i class="ico ico-copier"></i>Copier</button>
+          </div>
+        </div>
+      </div>
+
+      <hr class="separateur" style="margin: 0">
+
+      <h3 style="margin: 0">Liens de ce document</h3>
+      <ul class="liste-docs" style="gap: var(--e-2)">
+        <li class="doc" data-etats="cree">
+          <div class="pile--s">
+            <div class="ligne"><span class="code">…/t/k7Q2xv9Rm4TnY8sA</span><span class="etat etat--succes"><i class="ico ico-check"></i>Nouveau</span></div>
+            <div class="credit"><div class="credit__texte"><span>Restants</span><strong>500 / 500</strong></div><div class="barre"><div class="barre__plein" style="--p: 100%"></div></div></div>
+          </div>
+        </li>
+        <li class="doc" data-etats="epuise">
+          <div class="pile--s">
+            <div class="ligne"><span class="code">…/t/b3Hd8LpW2zQe5JcU</span><span class="etat etat--epuise"><i class="ico ico-interdit"></i>Épuisé</span></div>
+            <div class="credit"><div class="credit__texte"><span>Restants</span><strong>0 / 500</strong></div><div class="barre"><div class="barre__plein" style="--p: 0%"></div></div></div>
+            <span class="tres-petit doux">Dernier exemplaire distribué à 18:07. Le créateur a été prévenu par e-mail.</span>
+          </div>
+        </li>
+        <li class="doc">
+          <div class="pile--s">
+            <div class="ligne"><span class="code">…/t/p9Vn4XyT7kAm2RfE</span><span class="etat etat--attente"><i class="ico ico-alerte"></i>Presque épuisé</span></div>
+            <div class="credit"><div class="credit__texte"><span>Restants</span><strong>12 / 200</strong></div><div class="barre barre--attention"><div class="barre__plein" style="--p: 6%"></div></div></div>
+          </div>
+          <button class="bouton bouton--secondaire bouton--petit" type="button"><i class="ico ico-copier"></i>Copier</button>
+        </li>
+        <li class="doc">
+          <div class="pile--s">
+            <div class="ligne"><span class="code">…/t/c5Wk1GzS8nBh6DtQ</span><span class="etat etat--info">Actif</span></div>
+            <div class="credit"><div class="credit__texte"><span>Restants</span><strong>46 / 50</strong></div><div class="barre"><div class="barre__plein" style="--p: 92%"></div></div></div>
+          </div>
+          <button class="bouton bouton--secondaire bouton--petit" type="button"><i class="ico ico-copier"></i>Copier</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script src="maquettes.js"></script>
+</body>
+</html>
