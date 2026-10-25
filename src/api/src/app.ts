@@ -370,7 +370,10 @@ const tableauDeBord: Gestionnaire = async (a) => {
   return {
     statut: 200,
     corps: {
-      documentsOuverts: ouverts.map((x) => ({ docId: x.docId, titre: x.titre, connectes: x.connectes ?? 0 })),
+      documentsOuverts: await Promise.all(ouverts.map(async (x) => {
+        const principal = (await d.listerMembres(x.docId)).find((m) => m.role === 'principal');
+        return { docId: x.docId, titre: x.titre, principal: principal ? { email: principal.email, nom: principal.nom } : null, connectes: x.connectes ?? 0 };
+      })),
       liensActifs: liens.map((l) => ({
         lienId: l.lienId,
         docId: l.docId,
