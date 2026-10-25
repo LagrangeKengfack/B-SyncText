@@ -1,4 +1,4 @@
-// Client de l'API REST (même origine, préfixe /api). Types selon docs/conception/06-donnees-et-api.md.
+// Client de l'API REST (même origine, préfixe /api). Types conformes à la description de l'API (06-donnees-et-api.md).
 
 export const CLE_JETON = 'bsynctext.jeton'
 
