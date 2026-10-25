@@ -24,8 +24,7 @@ Parameters:
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
   PrefixesCloudFront:
     Type: String
-    Default: pl-fab65393
-    Description: liste d'adresses CloudFront geree par AWS (com.amazonaws.global.cloudfront.origin-facing)
+    Description: liste d'adresses CloudFront geree par AWS (com.amazonaws.global.cloudfront.origin-facing), propre a la region ; renseignee par deployer.sh
   VersionNode:
     Type: String
     Default: v22.23.4

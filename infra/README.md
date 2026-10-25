@@ -10,7 +10,7 @@ Toute l'infrastructure AWS de B-SyncText est décrite dans un seul fichier, [`te
 
 ## 1. Ce qui est créé
 
-Région unique : **eu-north-1** (Stockholm).
+Région unique : celle du profil AWS CLI (ou de `AWS_REGION`), **eu-north-1** (Stockholm) pour ce projet. Le gabarit ne dépend pas de la région, à condition que SES y soit disponible.
 
 | Groupe | Ressources | Pourquoi |
 |---|---|---|
@@ -40,7 +40,7 @@ Région unique : **eu-north-1** (Stockholm).
 ## 3. Déployer
 
 **Prérequis**
-- un compte AWS et l'AWS CLI v2, connectée avec `aws login` (région `eu-north-1`) ;
+- un compte AWS et l'AWS CLI v2, connectée avec `aws login`, avec une région par défaut configurée (`aws configure set region eu-north-1`) ;
 - Node.js 22 et les dépendances installées (`npm ci` à la racine du dépôt) ;
 - les outils `zip`, `openssl` et `jq`.
 

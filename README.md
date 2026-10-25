@@ -82,7 +82,7 @@ tests/              tests de concurrence et de charge, générateur de charge
 
 ## Déployer
 
-Prérequis : un compte AWS, l'AWS CLI connectée (`aws login`, région `eu-north-1`) et Node.js 22.
+Prérequis : un compte AWS, l'AWS CLI connectée (`aws login`, avec une région par défaut) et Node.js 22.
 ```
 npm ci
 infra/deployer.sh <votre-email>

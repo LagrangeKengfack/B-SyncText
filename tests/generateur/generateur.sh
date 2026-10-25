@@ -5,7 +5,7 @@
 #   tests/generateur/generateur.sh lancer "<commande>"   envoie les tests, lance la commande, rapatrie les résultats
 #   tests/generateur/generateur.sh supprimer             supprime la machine
 set -euo pipefail
-REGION="${AWS_REGION:-eu-north-1}"; export AWS_REGION="$REGION" AWS_DEFAULT_REGION="$REGION"
+REGION="${AWS_REGION:-$(aws configure get region 2>/dev/null || echo eu-north-1)}"; export AWS_REGION="$REGION" AWS_DEFAULT_REGION="$REGION"
 cd "$(dirname "$0")/../.."
 PILE=bsynctext-generateur
 COMPTE=$(aws sts get-caller-identity --query Account --output text)

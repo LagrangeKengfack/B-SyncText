@@ -3,7 +3,7 @@
 # Usage : infra/supprimer.sh
 set -euo pipefail
 
-REGION="${AWS_REGION:-eu-north-1}"
+REGION="${AWS_REGION:-$(aws configure get region 2>/dev/null || echo eu-north-1)}"
 PILE="bsynctext"
 export AWS_REGION="$REGION" AWS_DEFAULT_REGION="$REGION"
 COMPTE=$(aws sts get-caller-identity --query Account --output text)
