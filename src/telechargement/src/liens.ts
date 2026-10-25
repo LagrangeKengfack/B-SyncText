@@ -132,7 +132,7 @@ export async function traiterFichier(p: Ports, lienId: string, ticket: string | 
   try {
     compte = await p.depot.compter(ticket, lienId, t);
   } catch (e) {
-    // Transaction refusée en bloc : le ticket reste valable, le visiteur peut réessayer.
+    // Écriture refusée pour débit : le ticket reste valable, le visiteur peut réessayer.
     if (estErreurDebit(e)) return erreur(429, 'sature', 'Service momentanément saturé, réessayez.');
     throw e;
   }

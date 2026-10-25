@@ -1,8 +1,20 @@
 // Accès DynamoDB du téléchargement, derrière une interface (remplaçable en test).
 import {
-  DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, TransactWriteCommand, UpdateCommand,
+  DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { estRefusCondition } from './regles.js';
+import { estErreurDebit, estRefusCondition } from './regles.js';
+
+/** Réessaie une écriture refusée pour débit (jusqu'à ~6 s, avec gigue). */
+async function avecReessais<T>(f: () => Promise<T>): Promise<T> {
+  for (let essai = 0; ; essai++) {
+    try {
+      return await f();
+    } catch (e) {
+      if (!estErreurDebit(e) || essai >= 8) throw e;
+      await new Promise((r) => setTimeout(r, 50 * 2 ** Math.min(essai, 5) + Math.random() * 100));
+    }
+  }
+}
 
 export interface Lien {
   lienId: string;
@@ -31,11 +43,11 @@ export interface Depot {
   annulerReservation(lienId: string): Promise<void>;
   /** Quelques tickets réservés et expirés (index enAttente). */
   chercherExpirees(lienId: string, maintenant: number, limite: number): Promise<string[]>;
-  /** reserve → expire SI expireA <= maintenant, et disponibles + 1 ; faux si la condition est refusée. */
+  /** reserve → expire SI expireA <= maintenant, puis disponibles + 1 ; faux si la condition est refusée. */
   remettreEnStock(ticket: string, lienId: string, maintenant: number): Promise<boolean>;
-  /** reserve → compte SI expireA > maintenant, et comptes + 1 ; faux si ticket invalide, expiré ou déjà compté. */
+  /** reserve → compte SI expireA > maintenant ; faux si ticket invalide, expiré ou déjà compté. */
   compter(ticket: string, lienId: string, maintenant: number): Promise<boolean>;
-  /** numerotation + 1 ; rend le lien après écriture (k = numerotation). */
+  /** numerotation + 1 et comptes + 1 ; rend le lien après écriture (k = numerotation). */
   numeroter(lienId: string): Promise<Lien>;
   /** etat = epuise SI etat = actif ET comptes >= n. */
   marquerEpuise(lienId: string, maintenant: number): Promise<void>;
@@ -96,60 +108,40 @@ export function depotDynamo(ddb: DynamoDBDocumentClient, tableLiens: string, tab
       return (r.Items ?? []).map((i) => i.ticket as string);
     },
 
+    // Pas de transaction sur la fiche du lien : au pic, des centaines d'écritures la visent en même
+    // temps et DynamoDB annulerait les transactions en conflit (TransactionConflict). On enchaîne
+    // deux écritures conditionnelles simples ; une panne entre les deux perd au pire un exemplaire,
+    // jamais un de trop (06 §1).
     async remettreEnStock(ticket, lienId, maintenant) {
       try {
-        await ddb.send(new TransactWriteCommand({
-          TransactItems: [
-            {
-              Update: {
-                TableName: tableReservations,
-                Key: { ticket },
-                UpdateExpression: 'SET statut = :expire REMOVE attente',
-                ConditionExpression: 'statut = :reserve AND expireA <= :m AND lienId = :l',
-                ExpressionAttributeValues: { ':expire': 'expire', ':reserve': 'reserve', ':m': maintenant, ':l': lienId },
-              },
-            },
-            {
-              Update: {
-                TableName: tableLiens,
-                Key: { lienId },
-                UpdateExpression: 'ADD disponibles :un',
-                ConditionExpression: 'attribute_exists(lienId)',
-                ExpressionAttributeValues: { ':un': 1 },
-              },
-            },
-          ],
+        await ddb.send(new UpdateCommand({
+          TableName: tableReservations,
+          Key: { ticket },
+          UpdateExpression: 'SET statut = :expire REMOVE attente',
+          ConditionExpression: 'statut = :reserve AND expireA <= :m AND lienId = :l',
+          ExpressionAttributeValues: { ':expire': 'expire', ':reserve': 'reserve', ':m': maintenant, ':l': lienId },
         }));
-        return true;
       } catch (e) {
         if (estRefusCondition(e)) return false;
         throw e;
       }
+      await avecReessais(() => ddb.send(new UpdateCommand({
+        TableName: tableLiens,
+        Key: { lienId },
+        UpdateExpression: 'ADD disponibles :un',
+        ExpressionAttributeValues: { ':un': 1 },
+      })));
+      return true;
     },
 
     async compter(ticket, lienId, maintenant) {
       try {
-        await ddb.send(new TransactWriteCommand({
-          TransactItems: [
-            {
-              Update: {
-                TableName: tableReservations,
-                Key: { ticket },
-                UpdateExpression: 'SET statut = :compte REMOVE attente',
-                ConditionExpression: 'statut = :reserve AND expireA > :m AND lienId = :l',
-                ExpressionAttributeValues: { ':compte': 'compte', ':reserve': 'reserve', ':m': maintenant, ':l': lienId },
-              },
-            },
-            {
-              Update: {
-                TableName: tableLiens,
-                Key: { lienId },
-                UpdateExpression: 'ADD comptes :un',
-                ConditionExpression: 'attribute_exists(lienId)',
-                ExpressionAttributeValues: { ':un': 1 },
-              },
-            },
-          ],
+        await ddb.send(new UpdateCommand({
+          TableName: tableReservations,
+          Key: { ticket },
+          UpdateExpression: 'SET statut = :compte REMOVE attente',
+          ConditionExpression: 'statut = :reserve AND expireA > :m AND lienId = :l',
+          ExpressionAttributeValues: { ':compte': 'compte', ':reserve': 'reserve', ':m': maintenant, ':l': lienId },
         }));
         return true;
       } catch (e) {
@@ -158,15 +150,16 @@ export function depotDynamo(ddb: DynamoDBDocumentClient, tableLiens: string, tab
       }
     },
 
+    // Le ticket est déjà consommé : on insiste jusqu'à obtenir le numéro, sinon l'exemplaire
+    // serait compté sans être livré.
     async numeroter(lienId) {
-      const r = await ddb.send(new UpdateCommand({
+      const r = await avecReessais(() => ddb.send(new UpdateCommand({
         TableName: tableLiens,
         Key: { lienId },
-        UpdateExpression: 'ADD numerotation :un',
-        ConditionExpression: 'attribute_exists(lienId)',
+        UpdateExpression: 'ADD numerotation :un, comptes :un',
         ExpressionAttributeValues: { ':un': 1 },
         ReturnValues: 'ALL_NEW',
-      }));
+      })));
       return r.Attributes as Lien;
     },
 

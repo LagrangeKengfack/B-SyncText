@@ -26,8 +26,8 @@
 |---|---|
 | Débiter le crédit, avec recharge implicite (C-4) | `SET restant = if_not_exists(restant, 10000) - :n` SI `attribute_not_exists(restant) OR restant >= :n` |
 | Réserver un exemplaire (C-1) | `SET disponibles = disponibles - 1` SI `disponibles > 0 AND etat = actif` |
-| Compter un exemplaire (C-1, R-02) | transaction : réservation `reserve → compte` SI `expireA > maintenant`, et `comptes + 1` sur le lien |
-| Remettre en stock une réservation expirée | transaction : réservation `reserve → expire` SI `expireA <= maintenant`, et `disponibles + 1` sur le lien |
+| Compter un exemplaire (C-1, R-02) | réservation `reserve → compte` SI `expireA > maintenant`, puis `ADD numerotation 1, comptes 1` sur le lien (donne k) |
+| Remettre en stock une réservation expirée | réservation `reserve → expire` SI `expireA <= maintenant`, puis `disponibles + 1` sur le lien |
 | Un seul e-mail (BNF-10) | `SET notifie = true` SI `notifie = false` |
 
 **Numéros de version.** Un compteur atomique sur le document (`ADD numeroVersion 1`) donne :
@@ -35,6 +35,8 @@
 - un **décimal** pour une version automatique : v3.1, v3.2… après v3.
 
 **Le PDF inscrit toujours un numéro de version.** Si l'état téléchargé ne correspond à aucune version existante, la Lambda en crée une automatique au moment où elle génère le PDF de base. Il y en a au plus une par état du document, puisque le PDF de base est réutilisé tant que le texte ne change pas.
+
+**Pas de transaction sur la fiche du lien.** Au pic, des centaines d'écritures la visent en même temps, et DynamoDB annule les transactions en conflit. Le premier essai de T-01 l'a montré : des exemplaires étaient comptés sans être livrés. Chaque étape est donc une écriture conditionnelle simple, réessayée en cas de saturation.
 
 **Invariant du lien** : `disponibles + réservations actives + comptes = N`.
 

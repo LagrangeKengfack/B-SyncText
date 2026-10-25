@@ -36,10 +36,9 @@ export function depotMemoire(liens: Lien[]) {
       const l = tableLiens.get(id);
       if (!r || !l || r.statut !== 'reserve' || r.expireA <= m || r.lienId !== id) return false;
       r.statut = 'compte';
-      l.comptes++;
       return true;
     },
-    async numeroter(id) { await tick(); const l = tableLiens.get(id)!; l.numerotation++; return { ...l }; },
+    async numeroter(id) { await tick(); const l = tableLiens.get(id)!; l.numerotation++; l.comptes++; return { ...l }; },
     async marquerEpuise(id, m) {
       await tick();
       const l = tableLiens.get(id)!;
