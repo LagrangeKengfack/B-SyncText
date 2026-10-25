@@ -17,7 +17,7 @@ Région unique : celle du profil AWS CLI (ou de `AWS_REGION`), **eu-north-1** (S
 | Diffusion | **CloudFront** : une seule adresse HTTPS pour tout | certificat sans nom de domaine ; aiguille `/` vers le site, `/api/*` vers l'API, `/collab` vers le serveur d'édition |
 | Site web | bucket **S3** privé, lu par CloudFront seulement | fichiers statiques, coût quasi nul |
 | Édition temps réel | **EC2 t4g.small** (ARM, Amazon Linux 2023) avec le serveur Hocuspocus, service systemd | une connexion WebSocket longue par rédacteur, documents en mémoire |
-| API | **API Gateway HTTP** et deux **Lambda** Node.js 22 : `api` (512 Mo) et `telechargement` (1 Go, 250 exécutions réservées) | aucun coût au repos ; le pic des visiteurs ne touche pas le serveur d'édition |
+| API | **API Gateway HTTP** et deux **Lambda** Node.js 22 : `api` (512 Mo) et `telechargement` (1 Go, 300 exécutions réservées) | aucun coût au repos ; le pic des visiteurs ne touche pas le serveur d'édition |
 | Données | 9 tables **DynamoDB** à la demande, bucket S3 de données (états, versions, PDF) | écritures conditionnelles atomiques pour C-1 et C-4 |
 | Réseau | VPC dédié, 2 sous-réseaux publics, points d'accès S3 et DynamoDB | les points d'accès sont gratuits ; pas de NAT, qui est facturé à l'heure |
 | Hors pile, créé par `deployer.sh` | bucket du code, 3 secrets SSM, identité e-mail SES, budget | ressources de compte, ou secrets qui ne doivent pas apparaître dans le gabarit |

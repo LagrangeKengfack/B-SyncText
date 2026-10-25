@@ -444,7 +444,7 @@ Resources:
       Handler: index.handler
       MemorySize: 1024
       Timeout: 15
-      ReservedConcurrentExecutions: 250
+      ReservedConcurrentExecutions: 300
       Role: !GetAtt RoleTelechargement.Arn
       Code: { S3Bucket: !Ref BucketArtefacts, S3Key: !Ref CleCodeTelechargement }
       LoggingConfig: { LogGroup: !Ref JournauxTelechargement }
