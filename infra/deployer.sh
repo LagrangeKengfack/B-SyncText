@@ -83,7 +83,10 @@ sortie() { aws cloudformation describe-stacks --stack-name "$PILE" --query "Stac
 ADRESSE=$(sortie Adresse); SITE=$(sortie BucketSite); DISTRIB=$(sortie IdDistribution); INSTANCE=$(sortie IdServeurEdition)
 
 etape "5. Application web"
-aws s3 sync src/web/dist "s3://$SITE" --delete --only-show-errors
+# Les fichiers à empreinte (assets/) sont gardés un an ; index.html et les fichiers sans empreinte sont revalidés à chaque visite,
+# sinon le navigateur garde une ancienne page après un déploiement.
+aws s3 sync src/web/dist/assets "s3://$SITE/assets" --delete --only-show-errors --cache-control "public, max-age=31536000, immutable"
+aws s3 sync src/web/dist "s3://$SITE" --delete --exclude "assets/*" --only-show-errors --cache-control "no-cache"
 aws cloudfront create-invalidation --distribution-id "$DISTRIB" --paths "/*" --query Invalidation.Id --output text
 
 etape "6. Serveur d'édition (mise à jour par SSM, sans SSH)"
