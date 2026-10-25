@@ -1,0 +1,45 @@
+{
+  "test": "t02-remise-en-stock",
+  "date": "2026-10-25T15:55:49.146Z",
+  "baseUrl": "https://d1u2w3ays8s3t6.cloudfront.net",
+  "parametres": {
+    "N": 10,
+    "visiteurs": 20
+  },
+  "lienId": "rgxNq-OlfYV2qpKiv3ulUQ",
+  "reservationsObtenues": 10,
+  "expireAReservations": 1792943745775,
+  "servis": 10,
+  "numeros": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "etatFinal": {
+    "pdf": 10,
+    "epuise": 10
+  },
+  "premierServiApresDebutS": 61.408,
+  "dernierServiApresDebutS": 61.657,
+  "anciensTicketsStatuts": [
+    410,
+    410,
+    410,
+    410,
+    410,
+    410,
+    410,
+    410,
+    410,
+    410
+  ],
+  "anciensServis": 0,
+  "verdict": "REUSSI"
+}
