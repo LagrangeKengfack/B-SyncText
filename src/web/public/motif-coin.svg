@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 52" aria-hidden="true">
+  <!-- Motif décoratif : le coin haut-gauche du gabarit PDF (pdf-gabarit.svg), pour les en-têtes et les illustrations. -->
+  <path d="M0 0H30L0 50Z" fill="#fc7c20"/>
+  <path d="M36 0H130L114 16H26.4Z" fill="#292526"/>
+  <path d="M40 20H104L98 28H34.4Z" fill="#fc7c20"/>
+  <path d="M140 0H210V4H138Z" fill="#fc7c20"/>
+  <path d="M150 9H190L185 15H145Z" fill="#292526"/>
+</svg>

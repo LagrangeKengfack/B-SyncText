@@ -1,9 +1,9 @@
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import * as Y from 'yjs'
 import { api, ErreurApi, type DocumentDetail, type Version } from '../api.ts'
-import { Bandeau, BandeauxGlobaux, EnteteApp, Icone, JaugeCredit, Pastille } from '../composants/commun.tsx'
+import { Avatar, Bandeau, CreditPilule, Icone, Marque, useClasseBody } from '../composants/commun.tsx'
 import Historique, { type Apercu } from '../composants/Historique.tsx'
 import Liens from '../composants/Liens.tsx'
 import Partager from '../composants/Partager.tsx'
@@ -43,7 +43,9 @@ function useMaintenant(pas: number): number {
 export default function Editeur() {
   const { docId = '' } = useParams()
   const { jeton, redacteur, majCredit, majBlocage } = useSession()
-  const compact = useMediaQuery('(max-width: 900px)')
+  const compact = useMediaQuery('(max-width: 640px)')
+  useClasseBody('editeur-page')
+  const [cibleOutils, setCibleOutils] = useState<HTMLElement | null>(null)
   const maintenant = useMaintenant(15_000)
 
   const [doc, setDoc] = useState<DocumentDetail | null>(null)
@@ -207,8 +209,9 @@ export default function Editeur() {
         : { cls: 'statut--ok', ico: 'enregistre', texte: 'Enregistré' }
 
   if (erreurDoc) {
-    return (<><EnteteApp lienRetour /><main className="conteneur conteneur--moyen" style={{ padding: 'var(--e-7) var(--e-4)' }}>
-      <Bandeau type="erreur" icone="alerte" role="alert" titre={erreurDoc} /></main></>)
+    return (<><header className="barre-app"><div className="barre-app__contenu"><Marque vers="/documents" /></div></header>
+      <main className="conteneur conteneur--moyen" style={{ padding: 'var(--e-5) var(--e-4)' }}>
+        <Bandeau type="erreur" icone="alerte" role="alert" titre={erreurDoc}><Link to="/documents">Retour à mes documents</Link></Bandeau></main></>)
   }
   if (!redacteur || !credit) return null
 
@@ -217,86 +220,82 @@ export default function Editeur() {
   const nbConnectes = autres.length + 1
   const libelleApercu = apercu ? `${apercu.version.numero ?? ''}${apercu.version.nom ? ` — ${apercu.version.nom}` : ''}`.trim() : ''
   const histo = (
-    <Historique versions={versions} apercu={apercu} estProprietaire={!!estProprietaire} lectureSeule={bloque || lectureServeur}
+    <Historique versions={versions} format={doc?.formatVersion} dernierNumero={doc?.derniereVersion?.numero} membres={doc?.membres ?? []} apercu={apercu} estProprietaire={!!estProprietaire} lectureSeule={bloque || lectureServeur}
       nbConnectes={nbConnectes} message={msgVersion} compact={compact} onChoisir={choisirVersion}
-      onCreer={(nom) => envoyer({ type: 'creerVersion', nom })} onRestaurer={restaurer} onFermer={() => setPanneau(false)} />
+      onCreer={(nom, niveau) => envoyer({ type: 'creerVersion', nom, niveau })} onRestaurer={restaurer} onFermer={() => setPanneau(false)} />
   )
+
+  const enLigne = [{ email: redacteur.email, nom: redacteur.nom }, ...autres]
+  const faible = !bloque && credit.restant > 0 && credit.restant < 1000
+  const epuise = !bloque && credit.restant <= 0
+  const horsLigne = statut === 'disconnected' && !erreurCollab
+  const aBandeau = !!erreurCollab || horsLigne || bloque || epuise || faible
 
   return (
     <>
-      <BandeauxGlobaux />
-      <EnteteApp lienRetour />
-      <main className="editeur">
-        <div className="editeur__haut">
-          <div className="editeur__haut-contenu">
-            <div className="ligne ligne--entre">
-              <div className="pile--s" style={{ flex: 1, minWidth: 220 }}>
-                <input className="editeur__titre" aria-label="Titre du document" value={titre} disabled={!editable && !!apercu}
-                  onChange={(e) => setTitre(e.target.value)} onBlur={renommer} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }} />
-                <span className={`statut ${indicateur.cls}`} role="status"><Icone nom={indicateur.ico} />{indicateur.texte}</span>
-              </div>
-              <div className="ligne">
-                {compact && <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={() => setPanneau(true)}><Icone nom="historique" />Versions</button>}
-                <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={() => setFenetre('liens')}><Icone nom="lien" />Liens</button>
-                {estProprietaire && <button className="bouton bouton--principal bouton--petit" type="button" onClick={() => setFenetre('partager')}><Icone nom="partager" />Partager</button>}
-              </div>
-            </div>
-            <div className="pastilles" aria-label="Personnes connectées dans ce document">
-              <Pastille nom={redacteur.nom} email={redacteur.email} suffixe=" (vous)" />
-              {autres.map((p) => <Pastille key={p.email} nom={p.nom} email={p.email} />)}
-            </div>
+      <div className="editeur__haut">
+        <div className="editeur__haut-contenu">
+          <Marque vers="/documents" texte={false} />
+          <div className="editeur__identite">
+            <input className="editeur__titre" aria-label="Titre du document" value={titre} disabled={!editable}
+              onChange={(e) => setTitre(e.target.value)} onBlur={renommer} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }} />
+            <span className={`statut ${indicateur.cls}`} role="status"><Icone nom={indicateur.ico} />{indicateur.texte}</span>
           </div>
+          <div className="avatars" role="group" aria-label="Personnes connectées dans ce document">
+            {enLigne.map((p, i) => (
+              <Avatar key={p.email} nom={p.nom} couleur={couleurPour(p.email)} titre={i === 0 ? `${p.nom} (vous)` : p.nom} />
+            ))}
+          </div>
+          {compact && <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={() => setPanneau(true)}><Icone nom="historique" />Versions</button>}
+          <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={() => setFenetre('liens')}><Icone nom="lien" />Liens</button>
+          {estProprietaire && <button className="bouton bouton--principal bouton--petit" type="button" onClick={() => setFenetre('partager')}><Icone nom="partager" />Partager</button>}
         </div>
+      </div>
 
-        <div className="editeur__corps">
-          {!compact && histo}
-          <div className="editeur__principal">
-            <div style={{ background: 'var(--surface-2)' }}>
-              <div className="conteneur pile--s" style={{ paddingTop: 'var(--e-3)', maxWidth: 1080 }}>
-                {erreurCollab && <Bandeau type="erreur" icone="alerte" role="alert" titre="Connexion refusée">{erreurCollab}</Bandeau>}
-                {statut === 'disconnected' && !erreurCollab && (
-                  <Bandeau type="erreur" icone="hors-ligne" role="alert" titre="Hors ligne">Vos modifications seront envoyées au retour de la connexion. Tant qu'elles ne sont pas enregistrées, elles ne sont pas acceptées.</Bandeau>
-                )}
-                {bloque && (
-                  <Bandeau type="erreur" icone="interdit" role="alert" titre={`Écriture suspendue jusqu'à ${heureWat(redacteur.bloqueJusqua!)}`}>
-                    Trop de tentatives refusées en peu de temps. Vous pouvez lire le document et voir les autres écrire ; le blocage se lève tout seul.
-                  </Bandeau>
-                )}
-                {!bloque && credit.restant <= 0 && (
-                  <Bandeau type="attente" icone="alerte" role="status" titre="Crédit du jour épuisé.">
-                    Vous retrouvez {nombre(CREDIT_JOURNALIER)} caractères {texteRecharge(credit.rechargeA)}. Supprimer du texte reste possible.
-                  </Bandeau>
-                )}
-                {!bloque && credit.restant > 0 && credit.restant < 1000 && (
-                  <Bandeau type="attente" icone="alerte" role="status" titre={`Il vous reste ${nombre(credit.restant)} caractères aujourd'hui.`}>
-                    Au-delà, vos insertions seront refusées jusqu'à la recharge, {texteRecharge(credit.rechargeA)}. Supprimer du texte reste possible.
-                  </Bandeau>
-                )}
-              </div>
-            </div>
-            {collab ? (
-              <ZoneEdition key={epoque} doc={collab.doc} provider={collab.provider} utilisateur={utilisateur} editable={editable}
-                actions={actions} apercu={apercu} libelleApercu={libelleApercu} onRevenir={() => choisirVersion(null)}
-                refus={refus && (
-                  <div className="collage-refuse" role="alert">
-                    <p><Icone nom="interdit" /> <strong>Insertion refusée.</strong> {refus.texte}{' '}
-                      <button className="bouton-lien" type="button" onClick={() => setRefus(null)}>Fermer</button></p>
-                  </div>
-                )} />
-            ) : (
-              <div className="feuille-zone"><article className="feuille" aria-busy="true"><p className="doux" role="status">Resynchronisation…</p></article></div>
-            )}
-          </div>
-        </div>
+      <div className="outils-zone" ref={setCibleOutils}></div>
 
-        <div className="pied-editeur">
-          <div className="pied-editeur__contenu">
-            <JaugeCredit credit={credit} avecUnite />
-            <span className="petit doux"><Icone nom="horloge" /> Recharge {texteRecharge(credit.rechargeA)}</span>
-            {bloque && <span className="petit doux">Écriture suspendue jusqu'à {heureWat(redacteur.bloqueJusqua!)}</span>}
-          </div>
+      <div className="editeur__corps">
+        {!compact && histo}
+        <div className="canvas">
+          {aBandeau && (
+            <div className="bandeau-canvas pile--s">
+              {erreurCollab && <Bandeau type="erreur" icone="alerte" role="alert" titre="Connexion refusée">{erreurCollab}</Bandeau>}
+              {horsLigne && (
+                <Bandeau type="erreur" icone="hors-ligne" role="alert" titre="Hors ligne">Vos modifications seront envoyées au retour de la connexion. Tant qu'elles ne sont pas enregistrées, elles ne sont pas acceptées.</Bandeau>
+              )}
+              {bloque && (
+                <Bandeau type="erreur" icone="interdit" role="alert" titre={`Écriture suspendue jusqu'à ${heureWat(redacteur.bloqueJusqua!)}`}>
+                  Trop de tentatives refusées en peu de temps. Vous pouvez lire le document et voir les autres écrire ; le blocage se lève tout seul.
+                </Bandeau>
+              )}
+              {epuise && (
+                <Bandeau type="avert" icone="alerte" role="status" titre="Crédit du jour épuisé.">
+                  Vous retrouvez {nombre(CREDIT_JOURNALIER)} caractères {texteRecharge(credit.rechargeA)}. Supprimer du texte reste possible.
+                </Bandeau>
+              )}
+              {faible && (
+                <Bandeau type="avert" icone="alerte" role="status" titre={`Il vous reste ${nombre(credit.restant)} caractères aujourd'hui.`}>
+                  Au-delà, vos insertions seront refusées jusqu'à la recharge, {texteRecharge(credit.rechargeA)}. Supprimer du texte reste possible.
+                </Bandeau>
+              )}
+            </div>
+          )}
+          {collab ? (
+            <ZoneEdition key={epoque} doc={collab.doc} provider={collab.provider} utilisateur={utilisateur} editable={editable}
+              actions={actions} apercu={apercu} libelleApercu={libelleApercu} onRevenir={() => choisirVersion(null)} cibleOutils={cibleOutils}
+              refus={refus && (
+                <div className="collage-refuse" role="alert">
+                  <p><Icone nom="interdit" /> <strong>Insertion refusée.</strong> {refus.texte}{' '}
+                    <button className="bouton-lien" type="button" onClick={() => setRefus(null)}>Fermer</button></p>
+                </div>
+              )} />
+          ) : (
+            <article className="a4" aria-busy="true"><p className="doux" role="status">Resynchronisation…</p></article>
+          )}
         </div>
-      </main>
+      </div>
+
+      <CreditPilule credit={credit} flottant />
 
       {compact && panneau && histo}
       {fenetre === 'partager' && <Partager docId={docId} onFermer={() => setFenetre(null)} />}

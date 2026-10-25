@@ -52,7 +52,7 @@ export default function Partager({ docId, onFermer }: { docId: string; onFermer:
     const estMoi = m.email === moi
     return (
       <li className="membre" key={m.email}>
-        <Avatar nom={m.nom} couleur={c} />
+        <Avatar nom={m.nom} couleur={c} taille="l" titre={`${nomCourt(m.nom)}${estMoi ? ' (vous)' : ''}`} />
         <div className="membre__nom">{nomCourt(m.nom)}{estMoi && ' (vous)'} <span className={`role${m.role === 'principal' ? ' role--principal' : m.role === 'membre' ? ' role--membre' : ''}`}>{LIBELLE_ROLE[m.role]}</span></div>
         <div className="membre__actions">
           {estMoi && m.role !== 'membre' && (
@@ -88,7 +88,7 @@ export default function Partager({ docId, onFermer }: { docId: string; onFermer:
       </form>
       {erreur && <p className="champ__erreur" role="alert">{erreur}</p>}
 
-      <div className="pile--s">
+      <div className="lien-ligne">
         {regenere && (
           <Bandeau type="succes" icone="check" role="status" titre="Nouveau lien créé">
             L'ancien lien affiche désormais « invitation expirée ». Pensez à diffuser le nouveau.
@@ -105,16 +105,15 @@ export default function Partager({ docId, onFermer }: { docId: string; onFermer:
           </div>
           <span className="champ__aide">Qui ouvre ce lien entre son nom et son e-mail, puis écrit comme membre. Pratique pour inviter beaucoup de monde.</span>
         </div>
-        <div>
-          <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={regenerer}><Icone nom="actualiser" />Régénérer le lien</button>{' '}
+        <div className="ligne">
+          <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={regenerer}><Icone nom="actualiser" />Régénérer le lien</button>
           <span className="tres-petit doux">L'ancien lien cesse de fonctionner.</span>
         </div>
       </div>
-      <hr className="separateur" style={{ margin: 0 }} />
       <div>
-        <h3 style={{ margin: '0 0 var(--e-2)' }}>Personnes ayant accès</h3>
+        <h3 style={{ marginBottom: 'var(--e-2)' }}>Personnes ayant accès</h3>
         <ul className="liste-docs" style={{ gap: 0 }} aria-label="Membres">{doc?.membres.map(ligne)}</ul>
-        <p className="tres-petit doux" style={{ margin: 'var(--e-3) 0 0' }}>Seuls les propriétaires peuvent donner accès et nommer. Seul le principal peut retirer le rôle d'un propriétaire.</p>
+        <p className="tres-petit doux" style={{ marginTop: 'var(--e-3)' }}>Seuls les propriétaires peuvent donner accès et nommer. Seul le principal peut retirer le rôle d'un propriétaire.</p>
       </div>
     </Fenetre>
   )

@@ -76,3 +76,42 @@ export async function copier(texte: string): Promise<boolean> {
     return false
   }
 }
+
+// Salutation de E-02 : « dimanche 25 octobre » (jour WAT).
+export function dateLongue(ms: number): string {
+  return new Date(ms + DECALAGE_WAT).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
+}
+
+export function prenom(nom: string): string {
+  return nom.trim().split(/\s+/)[0] ?? nom
+}
+
+// Numéros de version : « v3.2 » -> [3, 2] ; null si illisible.
+export function chiffresVersion(numero: string | undefined): number[] | null {
+  if (!numero) return null
+  const m = /^v(\d+(?:\.\d+)*)$/.exec(numero.trim())
+  return m ? m[1].split('.').map(Number) : null
+}
+
+export function comparerChiffres(a: number[], b: number[]): number {
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const d = (a[i] ?? 0) - (b[i] ?? 0)
+    if (d !== 0) return d
+  }
+  return 0
+}
+
+// Nombre de chiffres du format choisi : v.x = 1, v.x.x = 2, v.x.x.x = 3.
+export function profondeurFormat(format: string | undefined): number {
+  if (!format) return 1
+  return Math.min(3, Math.max(1, format.split('.').length - 1))
+}
+
+// Le chiffre `niveau` (1 = premier) augmente, ceux à sa droite repassent à 0.
+export function incrementerChiffres(chiffres: number[], niveau: number): number[] {
+  return chiffres.map((c, i) => (i + 1 < niveau ? c : i + 1 === niveau ? c + 1 : 0))
+}
+
+export function texteVersion(chiffres: number[]): string {
+  return `v${chiffres.join('.')}`
+}

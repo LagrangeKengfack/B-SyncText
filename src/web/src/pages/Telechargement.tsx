@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api, ErreurApi } from '../api.ts'
-import { Icone } from '../composants/commun.tsx'
+import { Icone, Marque, useClasseBody } from '../composants/commun.tsx'
 import { heureWatSecondes, nombre } from '../format.ts'
 
 type Etat =
@@ -17,6 +17,7 @@ export default function Telechargement() {
   const [titre, setTitre] = useState('')
   const [etat, setEtat] = useState<Etat>({ nom: 'chargement' })
   const demarre = useRef<string | null>(null)
+  useClasseBody('public')
 
   useEffect(() => {
     // Une seule boucle par lien (StrictMode relance les effets en dev : une demande consomme un exemplaire).
@@ -66,18 +67,19 @@ export default function Telechargement() {
     return () => { vivant = false; clearTimeout(minuteur); demarre.current = null }
   }, [lienId])
 
+  const couvertureVisible = etat.nom === 'pret' || etat.nom === 'patientez' || etat.nom === 'chargement'
   return (
     <>
-      <header className="entete-app">
-        <div className="entete-app__contenu">
-          <span className="marque"><img src="/favicon.svg" alt="" />B-SyncText</span>
+      <header className="barre-app">
+        <div className="barre-app__contenu" style={{ justifyContent: 'center' }}>
+          <Marque />
         </div>
       </header>
-      <main className="conteneur conteneur--moyen page-centree">
-        <div className="carte" style={{ padding: 0 }}>
+      <main className="public__grille">
+        <div className="carte public__carte">
           {titre && etat.nom !== 'introuvable' && (
-            <div className="ligne" style={{ padding: 'var(--e-4) var(--e-5)', borderBottom: '1px solid var(--bordure)' }}>
-              <i className="ico ico-document" aria-hidden="true" style={{ width: 28, height: 28, color: 'var(--violet-700)' }}></i>
+            <div className="public__doc">
+              <Icone nom="documents" />
               <div>
                 <div className="gras">{titre}</div>
                 <div className="tres-petit doux">PDF</div>
@@ -95,11 +97,11 @@ export default function Telechargement() {
             {etat.nom === 'pret' && (
               <section className="etat-public">
                 <div className="etat-public__icone etat-public__icone--succes"><Icone nom="check" /></div>
-                <span className="numero">{nombre(etat.restants)} restant{etat.restants > 1 ? 's' : ''} sur {nombre(etat.n)}</span>
+                <span className="numero">Votre exemplaire est réservé · {nombre(etat.restants)} restants sur {nombre(etat.n)}</span>
                 <h1>Votre exemplaire est prêt</h1>
-                <p className="etat-public__texte">Le téléchargement du PDF démarre tout seul. Vous recevez le journal tel qu'il est à cet instant.</p>
+                <p className="etat-public__texte">Votre téléchargement démarre. S'il ne démarre pas tout seul, cliquez sur le bouton « Télécharger le PDF ».</p>
                 <a className="bouton bouton--principal bouton--grand" href={etat.url}><Icone nom="telecharger" />Télécharger le PDF</a>
-                <p className="tres-petit doux" style={{ margin: 0 }}>Si rien ne se passe, utilisez ce bouton. Il vous est réservé pendant 60 secondes et ne sert qu'une seule fois.</p>
+                <p className="tres-petit doux">Ce bouton vous est réservé pendant 60 secondes et ne sert qu'une seule fois.</p>
               </section>
             )}
             {etat.nom === 'patientez' && (
@@ -108,8 +110,8 @@ export default function Telechargement() {
                 <h1>Patientez, c'est bientôt votre tour</h1>
                 <p className="etat-public__texte">Beaucoup de personnes téléchargent en même temps. Nous réessayons à votre place.</p>
                 <div className="attente-anim" aria-hidden="true"></div>
-                <p className="petit doux" style={{ margin: 0 }}><strong>Gardez cette page ouverte.</strong> Elle se met à jour toute seule : inutile de recharger ou de recliquer.</p>
-                <p className="tres-petit doux" style={{ margin: 0 }}>Dernière vérification : {heureWatSecondes(etat.derniere)} (WAT)</p>
+                <p className="petit doux"><strong>Gardez cette page ouverte :</strong> inutile de recharger ou de recliquer.</p>
+                <p className="tres-petit doux">Dernière vérification : à {heureWatSecondes(etat.derniere)} (WAT)</p>
               </section>
             )}
             {etat.nom === 'epuise' && (
@@ -117,7 +119,7 @@ export default function Telechargement() {
                 <div className="etat-public__icone etat-public__icone--epuise"><Icone nom="interdit" /></div>
                 <h1>Ce lien n'a plus d'exemplaire</h1>
                 <p className="etat-public__texte">{etat.n ? `Les ${nombre(etat.n)} exemplaires ont tous été téléchargés.` : 'Tous les exemplaires ont été téléchargés.'} Nous sommes désolés de ne pas pouvoir vous en donner un.</p>
-                <p className="petit doux" style={{ margin: 0 }}>Écrivez à l'association pour demander un nouveau lien.</p>
+                <p className="petit doux">Écrivez à l'association pour demander un nouveau lien.</p>
               </section>
             )}
             {etat.nom === 'introuvable' && (
@@ -129,8 +131,16 @@ export default function Telechargement() {
             )}
           </div>
         </div>
-        <p className="pied-public">Aucune information personnelle n'est demandée pour télécharger.</p>
+        {couvertureVisible && (
+          <div className="couverture" aria-hidden="true">
+            <h2>{titre || 'B-SyncText'}</h2>
+            {etat.nom === 'pret'
+              ? <span className="couverture__pied">Le numéro d’exemplaire est inscrit sur le PDF</span>
+              : <span className="couverture__pied">Votre exemplaire sera numéroté à son tour</span>}
+          </div>
+        )}
       </main>
+      <p className="pied-public">Aucune information personnelle n'est demandée pour télécharger.</p>
     </>
   )
 }

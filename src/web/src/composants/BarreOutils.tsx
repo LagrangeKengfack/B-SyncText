@@ -30,7 +30,6 @@ export default function BarreOutils({ editor, desactive }: { editor: Editor; des
   const c = () => editor.chain().focus()
   return (
     <div className="outils" role="toolbar" aria-label="Mise en forme">
-      <div className="outils__contenu">
         <div className="outils__groupe">
           <select aria-label="Style de paragraphe" disabled={desactive} value={e.titre}
             onChange={(ev) => {
@@ -53,7 +52,6 @@ export default function BarreOutils({ editor, desactive }: { editor: Editor; des
           {bouton('Liste à puces', e.puces, () => c().toggleBulletList().run(), <Icone nom="liste" />)}
           {bouton('Liste numérotée', e.numerotee, () => c().toggleOrderedList().run(), <Icone nom="liste-num" />)}
         </div>
-      </div>
     </div>
   )
 }

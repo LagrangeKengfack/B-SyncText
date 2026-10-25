@@ -1,6 +1,6 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, type CSSProperties, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { heureWat, initiales, nombre, nomCourt, texteRecharge, couleurPour, CREDIT_JOURNALIER } from '../format.ts'
+import { heureWat, initiales, nombre, nomCourt, texteRecharge, CREDIT_JOURNALIER } from '../format.ts'
 import { useSession } from '../session.tsx'
 import type { Credit } from '../api.ts'
 
@@ -8,46 +8,55 @@ export function Icone({ nom }: { nom: string }) {
   return <i className={`ico ico-${nom}`} aria-hidden="true"></i>
 }
 
-export function Avatar({ nom, couleur }: { nom: string; couleur: string }) {
+// Classe posée sur <body> pendant l'affichage d'une page (fonds de l'accueil, de l'éditeur, de la page publique).
+export function useClasseBody(classe: string) {
+  useEffect(() => {
+    document.body.classList.add(classe)
+    return () => document.body.classList.remove(classe)
+  }, [classe])
+}
+
+// Cercle d'initiales ; le nom s'affiche au survol et au focus clavier.
+export function Avatar({ nom, couleur, taille, titre }: { nom: string; couleur: string; taille?: 's' | 'l'; titre?: string }) {
+  const libelle = titre ?? nom
   return (
-    <span className="avatar" style={{ '--c': couleur } as React.CSSProperties}>{initiales(nom)}</span>
+    <span className={`avatar${taille ? ` avatar--${taille}` : ''}`} style={{ '--c': couleur } as CSSProperties}
+      tabIndex={0} data-nom={libelle} aria-label={libelle}>{initiales(nom)}</span>
   )
 }
 
-export function Pastille({ nom, email, suffixe = '' }: { nom: string; email: string; suffixe?: string }) {
-  const c = couleurPour(email)
-  return (
-    <span className="pastille" style={{ '--c': c } as React.CSSProperties}>
-      <Avatar nom={nom} couleur={c} />{nomCourt(nom)}{suffixe}
-    </span>
-  )
-}
-
-export function Barre({ pourcent, variante, libelle }: { pourcent: number; variante?: 'danger' | 'attention'; libelle: string }) {
+export function Barre({ pourcent, variante, libelle, rayee = false, grosse = false }: {
+  pourcent: number; variante?: 'danger' | 'attention'; libelle: string; rayee?: boolean; grosse?: boolean
+}) {
   const p = Math.max(0, Math.min(100, pourcent))
+  const cls = ['barre', rayee ? 'barre--rayee' : '', variante ? `barre--${variante}` : '', grosse ? 'barre--grosse' : ''].filter(Boolean).join(' ')
   return (
-    <div className={`barre${variante ? ` barre--${variante}` : ''}`} role="img" aria-label={libelle}>
-      <div className="barre__plein" style={{ '--p': `${p}%` } as React.CSSProperties}></div>
+    <div className={cls} role="img" aria-label={libelle}>
+      <div className="barre__plein" style={{ '--p': `${p}%` } as CSSProperties}></div>
     </div>
   )
 }
 
-export function JaugeCredit({ credit, avecUnite = false }: { credit: Credit; avecUnite?: boolean }) {
-  const p = (credit.restant / CREDIT_JOURNALIER) * 100
-  const variante = credit.restant < 500 ? 'danger' : undefined
-  return (
-    <div className="credit">
-      <div className="credit__texte">
-        <span>Crédit du jour</span>
-        <strong>{nombre(credit.restant)} / {nombre(CREDIT_JOURNALIER)}{avecUnite ? ' caractères' : ''}</strong>
+// Crédit d'écriture : anneau + texte. `flottant` = pilule fixée en bas de l'éditeur (avec recharge et unité).
+export function CreditPilule({ credit, flottant = false }: { credit: Credit; flottant?: boolean }) {
+  const p = Math.round((credit.restant / CREDIT_JOURNALIER) * 100)
+  const faible = credit.restant < 1000
+  const pilule = (
+    <div className="credit-pilule" title="Crédit d'écriture du jour">
+      <div className={`anneau${faible ? ' anneau--danger' : ''}`} style={{ '--p': p } as CSSProperties} aria-hidden="true"><span>{p}%</span></div>
+      <div className="credit-pilule__texte">
+        {flottant
+          ? <span>Crédit du jour<span className="credit-pilule__recharge"> · recharge {texteRecharge(credit.rechargeA)}</span></span>
+          : <span>Crédit du jour</span>}
+        <strong>{nombre(credit.restant)} / {nombre(CREDIT_JOURNALIER)}{flottant ? ' caractères' : ''}</strong>
       </div>
-      <Barre pourcent={p} variante={variante} libelle={`${Math.round(p)} % du crédit restant`} />
     </div>
   )
+  return flottant ? <div className="credit-flottant" role="status">{pilule}</div> : pilule
 }
 
 export function Bandeau({ type, icone, titre, children, role, pleine }: {
-  type?: 'succes' | 'attente' | 'erreur' | 'epuise'
+  type?: 'succes' | 'attente' | 'avert' | 'erreur' | 'epuise'
   icone: string
   titre: string
   children?: ReactNode
@@ -76,7 +85,7 @@ export function BandeauxGlobaux() {
           <span><strong>Écriture suspendue jusqu'à {heureWat(redacteur.bloqueJusqua!)}.</strong> Trop de tentatives refusées en peu de temps.</span>
         </div>
       ) : redacteur.credit.restant <= 0 ? (
-        <div className="bandeau bandeau--attente bandeau--pleine-largeur" role="alert">
+        <div className="bandeau bandeau--avert bandeau--pleine-largeur" role="alert">
           <Icone nom="alerte" />
           <span><strong>Crédit du jour épuisé.</strong> Vous retrouvez {nombre(CREDIT_JOURNALIER)} caractères {texteRecharge(redacteur.credit.rechargeA)}. Vous pouvez lire, supprimer et restaurer.</span>
         </div>
@@ -85,28 +94,33 @@ export function BandeauxGlobaux() {
   )
 }
 
-// En-tête de l'application (E-02 et suivants).
-export function EnteteApp({ avecCredit = false, lienRetour = false }: { avecCredit?: boolean; lienRetour?: boolean }) {
+export function Marque({ vers, grande = false, texte = true }: { vers?: string; grande?: boolean; texte?: boolean }) {
+  const contenu = <><img src="/logo-clair.svg" alt="" />{texte && 'B-SyncText'}</>
+  const cls = `marque${grande ? ' marque--grande' : ''}`
+  return vers
+    ? <Link className={cls} to={vers} {...(texte ? {} : { 'aria-label': 'Retour à mes documents', title: 'Mes documents' })}>{contenu}</Link>
+    : <span className={cls}>{contenu}</span>
+}
+
+// En-tête de la page « Mes documents » (E-02).
+export function EnteteApp() {
   const { redacteur, quitter } = useSession()
   const nav = useNavigate()
   return (
-    <header className="entete-app">
-      <div className="entete-app__contenu">
-        <Link className="marque" to="/documents"><img src="/favicon.svg" alt="" />B-SyncText</Link>
-        {lienRetour && <Link className="petit" to="/documents">← Mes documents</Link>}
+    <header className="barre-app">
+      <div className="barre-app__contenu">
+        <Marque vers="/documents" />
         <span className="espace"></span>
-        {avecCredit && redacteur && (
-          <div className="credit">
-            <div className="credit__texte"><span>Crédit du jour</span><strong>{nombre(redacteur.credit.restant)} / {nombre(CREDIT_JOURNALIER)}</strong></div>
-            <Barre pourcent={(redacteur.credit.restant / CREDIT_JOURNALIER) * 100} variante={redacteur.credit.restant < 500 ? 'danger' : undefined}
-              libelle={`${Math.round((redacteur.credit.restant / CREDIT_JOURNALIER) * 100)} % du crédit restant`} />
-            <span className="tres-petit doux"><Icone nom="horloge" /> Recharge {texteRecharge(redacteur.credit.rechargeA)}</span>
-          </div>
+        {redacteur && <CreditPilule credit={redacteur.credit} />}
+        {redacteur && (
+          <span className="pilule-compte">
+            <span className="avatar avatar--s" style={{ '--c': 'var(--presence-1)' } as CSSProperties} aria-hidden="true">{initiales(redacteur.nom)}</span>
+            {nomCourt(redacteur.nom)}
+          </span>
         )}
-        {redacteur && <Pastille nom={redacteur.nom} email={redacteur.email} />}
-        {redacteur && !lienRetour && (
-          <button className="bouton bouton--discret bouton--petit" type="button" onClick={() => { quitter(); nav('/') }}>
-            <Icone nom="quitter" />Quitter
+        {redacteur && (
+          <button className="bouton-rond" type="button" aria-label="Quitter" title="Quitter" onClick={() => { quitter(); nav('/') }}>
+            <Icone nom="quitter" />
           </button>
         )}
       </div>
@@ -114,9 +128,9 @@ export function EnteteApp({ avecCredit = false, lienRetour = false }: { avecCred
   )
 }
 
-// Fenêtre modale (E-04, E-06) : Échap ferme, focus sur le bouton Fermer.
-export function Fenetre({ titreId, titre, onFermer, children }: {
-  titreId: string; titre: string; onFermer: () => void; children: ReactNode
+// Fenêtre modale (E-02, E-04, E-06) : Échap ferme, focus sur le bouton Fermer.
+export function Fenetre({ titreId, titre, onFermer, children, largeur }: {
+  titreId: string; titre: string; onFermer: () => void; children: ReactNode; largeur?: number
 }) {
   useEffect(() => {
     const f = (e: KeyboardEvent) => { if (e.key === 'Escape') onFermer() }
@@ -124,11 +138,11 @@ export function Fenetre({ titreId, titre, onFermer, children }: {
     return () => window.removeEventListener('keydown', f)
   }, [onFermer])
   return (
-    <div className="scene__voile scene__voile--fixe">
-      <div className="fenetre" role="dialog" aria-modal="true" aria-labelledby={titreId}>
+    <div className="scene__voile voile-fixe">
+      <div className="fenetre" role="dialog" aria-modal="true" aria-labelledby={titreId} style={largeur ? { maxWidth: largeur } : undefined}>
         <div className="fenetre__tete">
           <h2 id={titreId}>{titre}</h2>
-          <button className="bouton bouton--discret bouton--petit" type="button" aria-label="Fermer" onClick={onFermer} autoFocus>
+          <button className="bouton-rond" type="button" aria-label="Fermer" onClick={onFermer} autoFocus>
             <Icone nom="fermer" />
           </button>
         </div>

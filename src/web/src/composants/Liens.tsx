@@ -36,7 +36,7 @@ export default function Liens({ docId, titreDoc, onFermer }: { docId: string; ti
   const adresse = nouveau ? urlAbsolue(nouveau.url) : ''
   return (
     <Fenetre titreId="titre-liens" titre="Liens de téléchargement" onFermer={onFermer}>
-      <p className="doux petit" style={{ margin: 'calc(var(--e-2) * -1) 0 0' }}>{titreDoc}. Un lien donne toujours le document tel qu'il est au moment du téléchargement.</p>
+      <p className="doux petit" style={{ marginTop: 'calc(var(--e-3) * -1)' }}>{titreDoc}. Un lien donne toujours le document tel qu'il est au moment du téléchargement.</p>
       {!nouveau && (
         <form className="pile" onSubmit={creer} noValidate>
           <div className="champ">
@@ -63,40 +63,41 @@ export default function Liens({ docId, titreDoc, onFermer }: { docId: string; ti
               </button>
             </div>
           </div>
-          <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={() => setNouveau(null)}><Icone nom="plus" />Créer un autre lien</button>
+          <div><button className="bouton bouton--secondaire bouton--petit" type="button" onClick={() => setNouveau(null)}><Icone nom="plus" />Créer un autre lien</button></div>
         </div>
       )}
       {erreur && <p className="champ__erreur" role="alert">{erreur}</p>}
-      <hr className="separateur" style={{ margin: 0 }} />
-      <h3 style={{ margin: 0 }}>Liens de ce document</h3>
-      {liens.length === 0 && <p className="doux petit" style={{ margin: 0 }}>Aucun lien pour l'instant.</p>}
-      <ul className="liste-docs" style={{ gap: 'var(--e-2)' }}>
+      <h3>Liens de ce document</h3>
+      {liens.length === 0 && <p className="doux petit">Aucun lien pour l'instant.</p>}
+      <ul className="liste-docs" style={{ gap: 'var(--e-3)' }}>
         {liens.map((l) => {
           const epuise = l.etat === 'epuise' || l.restants <= 0
           const presque = !epuise && l.restants <= Math.max(1, l.n * 0.1)
           const p = l.n > 0 ? (l.restants / l.n) * 100 : 0
           return (
-            <li className="doc" key={l.lienId}>
-              <div className="pile--s">
-                <div className="ligne">
-                  <span className="code">…/l/{l.lienId.slice(-8)}</span>
+            <li className="lien-ligne" key={l.lienId}>
+              <div className="lien-ligne__tete">
+                <span className="code">…/l/{l.lienId}</span>
+                <span className="ligne" style={{ gap: 'var(--e-2)' }}>
                   {nouveau?.lienId === l.lienId && <span className="etat etat--succes"><Icone nom="check" />Nouveau</span>}
                   {epuise ? <span className="etat etat--epuise"><Icone nom="interdit" />Épuisé</span>
-                    : presque ? <span className="etat etat--attente"><Icone nom="alerte" />Presque épuisé</span>
+                    : presque ? <span className="etat etat--avert"><Icone nom="alerte" />Presque épuisé</span>
                     : <span className="etat etat--info">Actif</span>}
-                  {l.email === 'envoye' && <span className="etat etat--succes"><Icone nom="check" />E-mail envoyé</span>}
-                  {l.email === 'echec' && <span className="etat etat--attente" title={l.emailErreur ?? undefined}><Icone nom="alerte" />E-mail non envoyé</span>}
-                </div>
-                <div className="credit">
-                  <div className="credit__texte"><span>Restants</span><strong>{nombre(l.restants)} / {nombre(l.n)}</strong></div>
-                  <Barre pourcent={p} variante={presque ? 'attention' : undefined} libelle={`${Math.round(p)} % restant`} />
-                </div>
+                  {l.email === 'envoye' && <span className="etat etat--succes"><Icone nom="mail" />E-mail envoyé</span>}
+                  {l.email === 'echec' && <span className="etat etat--avert" title={l.emailErreur ?? undefined}><Icone nom="alerte" />E-mail non envoyé</span>}
+                </span>
               </div>
-              {!epuise && (
-                <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={() => copierLien(l.lienId)}>
-                  <Icone nom="copier" />{copie === l.lienId ? 'Copié' : 'Copier'}
-                </button>
-              )}
+              <div className="ligne ligne--entre">
+                <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{nombre(l.restants)} / {nombre(l.n)} restants</strong>
+                {!epuise && (
+                  <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={() => copierLien(l.lienId, l.url)}>
+                    <Icone nom="copier" />{copie === l.lienId ? 'Copié' : 'Copier'}
+                  </button>
+                )}
+              </div>
+              <Barre pourcent={p} rayee variante={presque ? 'attention' : undefined} libelle={`${Math.round(p)} % restant`} />
+              {epuise && l.email === 'envoye' && <span className="tres-petit doux">Le créateur a été prévenu par e-mail.</span>}
+              {epuise && l.email === 'echec' && <span className="tres-petit doux">Le créateur n'a pas pu être prévenu par e-mail{l.emailErreur ? ` (${l.emailErreur})` : ''}.</span>}
             </li>
           )
         })}

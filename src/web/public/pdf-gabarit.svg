@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297" width="210mm" height="297mm" role="img" aria-label="Gabarit de page du PDF B-SyncText">
+  <!-- Gabarit de page A4 du PDF : bandes orange et noir encre en biais, inspirées du modèle fourni (design/pdf.png).
+       Une seule définition (le coin) utilisée deux fois : en haut à gauche et, tournée de 180°, en bas à droite.
+       Couleurs : orange #FC7C20 (relevé sur le modèle), noir encre #292526.
+       Zone libre pour le texte : marges de 25 mm à gauche et à droite, de 42 mm en haut, de 50 mm en bas (le pied de page se place à 36 mm du bas, au-dessus des bandes). -->
+  <defs>
+    <g id="coin">
+      <path d="M0 0H30L0 50Z" fill="#fc7c20"/>
+      <path d="M36 0H130L114 16H26.4Z" fill="#292526"/>
+      <path d="M40 20H104L98 28H34.4Z" fill="#fc7c20"/>
+      <path d="M140 0H210V4H138Z" fill="#fc7c20"/>
+      <path d="M150 9H190L185 15H145Z" fill="#292526"/>
+    </g>
+  </defs>
+  <rect width="210" height="297" fill="#ffffff"/>
+  <use href="#coin"/>
+  <use href="#coin" transform="rotate(180 105 148.5)"/>
+</svg>

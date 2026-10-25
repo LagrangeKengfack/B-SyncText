@@ -5,11 +5,13 @@ export const CLE_JETON = 'bsynctext.jeton'
 export interface Credit { restant: number; rechargeA: number }
 export interface Redacteur { email: string; nom: string; credit: Credit; bloqueJusqua?: number }
 export type Role = 'principal' | 'proprietaire' | 'membre'
+export type FormatVersion = 'v.x' | 'v.x.x' | 'v.x.x.x'
+export interface PersonneRef { email?: string; nom: string }
 export interface DocumentResume {
   docId: string
   titre: string
   role: Role
-  principal: string | { nom: string }
+  principal: PersonneRef | string | null
   modifieLe: number
   connectes: number
 }
@@ -20,6 +22,8 @@ export interface DocumentDetail {
   role: Role
   membres: Membre[]
   lienInvitation?: string
+  formatVersion?: FormatVersion
+  derniereVersion?: { numero: string; versionId: string } | null
 }
 export interface Version {
   versionId: string
@@ -32,7 +36,8 @@ export interface Version {
   auteur?: string
 }
 export interface LienResume {
-  lienId: string; n: number; restants: number; etat: 'actif' | 'epuise'
+  lienId: string; url?: string; n: number; restants: number; etat: 'actif' | 'epuise'
+  creeLe?: number; creePar?: string
   email?: 'envoye' | 'echec' | null; emailErreur?: string | null
 }
 export interface LienPublic { titre: string; n: number; restants: number; etat: 'actif' | 'epuise' }
@@ -41,7 +46,7 @@ export type Demande =
   | { etat: 'patientez'; reessayerDans: number; restants?: number; n?: number }
   | { etat: 'epuise'; n?: number }
 export interface TableauDeBord {
-  documentsOuverts: { docId?: string; titre: string; principal?: string | { nom: string }; connectes: number }[]
+  documentsOuverts: { docId?: string; titre: string; principal?: PersonneRef | string | null; connectes: number }[]
   liensActifs: {
     lienId?: string; titre: string; creeParNom?: string; creePar?: string
     n: number; restants?: number; disponibles?: number
@@ -114,7 +119,8 @@ export const api = {
     appel<{ jeton: string; redacteur: Redacteur }>('POST', '/session', { corps: { nom, email }, jeton: false }),
   moi: () => appel<Redacteur>('GET', '/moi'),
   documents: () => appel<DocumentResume[]>('GET', '/documents'),
-  creerDocument: (titre: string) => appel<{ docId: string }>('POST', '/documents', { corps: { titre } }),
+  creerDocument: (titre: string, formatVersion: FormatVersion) =>
+    appel<{ docId: string; titre: string; role: Role; formatVersion: FormatVersion; lienInvitation: string }>('POST', '/documents', { corps: { titre, formatVersion } }),
   document: (docId: string) => appel<DocumentDetail>('GET', `/documents/${enc(docId)}`),
   renommer: (docId: string, titre: string) => appel<void>('PATCH', `/documents/${enc(docId)}`, { corps: { titre } }),
   ajouterMembre: (docId: string, email: string) =>

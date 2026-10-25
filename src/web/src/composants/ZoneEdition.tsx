@@ -5,6 +5,7 @@ import TextAlign from '@tiptap/extension-text-align'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import type * as Y from 'yjs'
 import BarreOutils from './BarreOutils.tsx'
 import { Contenu } from './Contenu.tsx'
@@ -20,7 +21,7 @@ export interface ActionsCredit {
 }
 
 // Barre de mise en forme + feuille. Remontée à chaque nouvelle connexion (key) après un refus.
-export default function ZoneEdition({ doc, provider, utilisateur, editable, actions, apercu, libelleApercu, onRevenir, refus }: {
+export default function ZoneEdition({ doc, provider, utilisateur, editable, actions, apercu, libelleApercu, onRevenir, refus, cibleOutils }: {
   doc: Y.Doc
   provider: HocuspocusProvider
   utilisateur: Utilisateur
@@ -30,6 +31,7 @@ export default function ZoneEdition({ doc, provider, utilisateur, editable, acti
   libelleApercu: string
   onRevenir: () => void
   refus: React.ReactNode
+  cibleOutils: HTMLElement | null
 }) {
   const actionsRef = useRef(actions)
   useEffect(() => { actionsRef.current = actions })
@@ -48,12 +50,9 @@ export default function ZoneEdition({ doc, provider, utilisateur, editable, acti
         user: utilisateur,
         render: (u) => {
           const el = document.createElement('span')
-          el.className = 'curseur-collab'
+          el.className = 'curseur'
           el.style.setProperty('--c', u.color)
-          const nom = document.createElement('span')
-          nom.className = 'curseur-collab__nom'
-          nom.textContent = u.name
-          el.appendChild(nom)
+          el.dataset.nom = u.name
           return el
         },
         selectionRender: (u) => ({ nodeName: 'span', class: 'selection', style: `--c: ${u.color}` }),
@@ -72,25 +71,25 @@ export default function ZoneEdition({ doc, provider, utilisateur, editable, acti
 
   return (
     <>
-      {editor && <BarreOutils editor={editor} desactive={!editable} />}
-      <div className="feuille-zone">
-        {apercu && (
-          <>
-            <div className="bandeau bandeau-apercu" role="status">
+      {editor && cibleOutils && createPortal(<BarreOutils editor={editor} desactive={!editable} />, cibleOutils)}
+      {apercu && (
+        <>
+          <div className="bandeau-canvas">
+            <div className="bandeau" role="status">
               <Icone nom="oeil" />
               <div className="bandeau__corps"><strong>Aperçu de {libelleApercu} (lecture seule)</strong>
-                <span>Vous regardez une ancienne version. Le document en cours n'est pas modifié. <button className="bouton-lien" type="button" onClick={onRevenir}>Revenir à la version actuelle</button>.</span></div>
+                <span>Vous regardez une ancienne version ; le document en cours n'est pas modifié. <button className="bouton-lien" type="button" onClick={onRevenir}>Revenir à la version actuelle</button>.</span></div>
             </div>
-            <article className="feuille" aria-readonly="true" aria-label={`Contenu de la version ${apercu.version.numero ?? ''}`}>
-              {apercu.contenu === null ? <p className="doux">Chargement…</p> : <Contenu contenu={apercu.contenu} />}
-            </article>
-          </>
-        )}
-        <article className="feuille" hidden={!!apercu} aria-readonly={!editable}>
-          {refus}
-          <EditorContent editor={editor} />
-        </article>
-      </div>
+          </div>
+          <article className="a4" aria-readonly="true" aria-label={`Contenu de la version ${apercu.version.numero ?? ''}`}>
+            {apercu.contenu === null ? <p className="doux">Chargement…</p> : <Contenu contenu={apercu.contenu} />}
+          </article>
+        </>
+      )}
+      <article className="a4" hidden={!!apercu} aria-readonly={!editable}>
+        {refus}
+        <EditorContent editor={editor} />
+      </article>
     </>
   )
 }

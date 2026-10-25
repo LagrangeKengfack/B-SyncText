@@ -1,0 +1,30 @@
+/* Compléments propres à l'application (les maquettes sont statiques) : Tiptap, curseurs, fenêtres fixes. */
+
+/* Fenêtre ou panneau fixé au-dessus de la page */
+.voile-fixe { position: fixed; inset: 0; z-index: 60; overflow-y: auto; }
+.voile-fixe .fenetre { margin-bottom: var(--e-5); }
+.voile-fixe.scene__voile--droite { padding: 0; }
+
+/* Éditeur : la barre flottante reste visible, la page A4 contient l'éditeur Tiptap */
+.outils-zone:empty { display: none; }
+.outils-zone { position: sticky; top: 0; padding-bottom: var(--e-2); background: linear-gradient(var(--fond-2) 70%, transparent); }
+.a4 .ProseMirror { outline: none; min-height: 900px; }
+.a4 .ProseMirror > :first-child { margin-top: 0; }
+.a4 .ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--texte-doux); float: left; height: 0; pointer-events: none; }
+.a4 .ProseMirror h3 { font-size: 1.2rem; margin: var(--e-4) 0 var(--e-2); }
+.a4 .ProseMirror ol { padding-left: var(--e-5); }
+.a4 .collage-refuse { margin-bottom: var(--e-3); }
+.a4--apercu { margin-bottom: var(--e-5); }
+.curseur { pointer-events: none; }
+.curseur::before { z-index: 4; }
+
+/* Vignette d'un document (pas d'aperçu du texte dans la liste) */
+.vignette-ligne { display: block; height: 5px; margin-top: 7px; border-radius: 3px; background: var(--bordure); }
+
+/* Bouton qui ressemble à un lien (dans les bandeaux) */
+.bouton-lien { padding: 0; font: inherit; font-weight: 700; color: inherit; text-decoration: underline; background: none; border: 0; cursor: pointer; }
+
+/* Pied de formulaire de connexion et cartes de la page d'accueil */
+.pile-liens { display: grid; gap: var(--e-3); }
+.rangee__titre .code { white-space: normal; }
+.rangee__chiffre .etat { white-space: nowrap; }
