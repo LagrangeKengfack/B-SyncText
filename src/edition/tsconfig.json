@@ -5,6 +5,17 @@
     "outDir": "dist",
     "composite": true
   },
-  "include": ["src"],
-  "references": [{ "path": "../commun" }]
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../commun"
+    }
+  ],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/faux-aws.ts",
+    "src/outils-test.ts"
+  ]
 }

@@ -16,5 +16,8 @@
     "@b-synctext/commun": "^0.1.0",
     "@hocuspocus/server": "^4.7.1",
     "yjs": "^13.6.33"
+  },
+  "devDependencies": {
+    "@hocuspocus/provider": "^4.7.1"
   }
 }
