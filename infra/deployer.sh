@@ -5,7 +5,8 @@
 set -euo pipefail
 
 EMAIL="${1:?usage : infra/deployer.sh <email>}"
-REGION="${AWS_REGION:-eu-north-1}"
+# Région : celle de la variable AWS_REGION, sinon celle du profil CLI (eu-north-1 pour ce projet).
+REGION="${AWS_REGION:-$(aws configure get region 2>/dev/null || echo eu-north-1)}"
 PILE="bsynctext"
 export AWS_REGION="$REGION" AWS_DEFAULT_REGION="$REGION"
 cd "$(dirname "$0")/.."
@@ -53,7 +54,7 @@ envoyer() {
   local empreinte; empreinte=$(sha256sum "$1" | cut -c1-64)
   local bucket="${2#s3://}"; bucket="${bucket%%/*}"; local cle="${2#s3://*/}"
   local md5; md5=$(md5sum "$1" | cut -c1-32)
-  local present; present=$(aws s3api head-object --bucket "$bucket" --key "$cle" --query '[Metadata.sha256,ETag]' --output text 2>/dev/null | tr -d '"')
+  local present; present=$(aws s3api head-object --bucket "$bucket" --key "$cle" --query '[Metadata.sha256,ETag]' --output text 2>/dev/null | tr -d '"' || true)
   case "$present" in *"$empreinte"*|*"$md5"*) echo "déjà en place : $cle"; return 0;; esac
   local i; for i in 1 2 3 4; do
     aws s3 cp "$1" "$2" --only-show-errors --metadata "sha256=$empreinte" && return 0
@@ -70,11 +71,13 @@ gzip -9 -k -f "$PAQUETS/edition/index.mjs"
 envoyer "$PAQUETS/edition/index.mjs.gz" "s3://$ARTEFACTS/edition/index.mjs.gz"
 
 etape "4. Pile CloudFormation"
+# Liste d'adresses CloudFront gérée par AWS : son identifiant change selon la région
+PREFIXES=$(aws ec2 describe-managed-prefix-lists --filters Name=prefix-list-name,Values=com.amazonaws.global.cloudfront.origin-facing --query "PrefixLists[0].PrefixListId" --output text)
 SECRET_ORIGINE=$(aws ssm get-parameter --name /bsynctext/secret-origine --with-decryption --query Parameter.Value --output text)
 aws cloudformation deploy --stack-name "$PILE" --template-file infra/template.yaml \
   --capabilities CAPABILITY_IAM --no-fail-on-empty-changeset \
   --parameter-overrides EmailAuteur="$EMAIL" BucketArtefacts="$ARTEFACTS" \
-    CleCodeApi="$CLE_API" CleCodeTelechargement="$CLE_TEL" SecretOrigine="$SECRET_ORIGINE"
+    CleCodeApi="$CLE_API" CleCodeTelechargement="$CLE_TEL" SecretOrigine="$SECRET_ORIGINE" PrefixesCloudFront="$PREFIXES"
 
 sortie() { aws cloudformation describe-stacks --stack-name "$PILE" --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }
 ADRESSE=$(sortie Adresse); SITE=$(sortie BucketSite); DISTRIB=$(sortie IdDistribution); INSTANCE=$(sortie IdServeurEdition)
