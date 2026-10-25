@@ -171,12 +171,14 @@ function corps(blocs: Bloc[]): Content[] {
 }
 
 /** PDF de base d'une version (sans numéro d'exemplaire), au gabarit du §8. */
-export async function genererPdf(blocs: Bloc[], entete: { titre: string; numeroVersion: string }): Promise<Uint8Array> {
+export async function genererPdf(blocs: Bloc[], entete: { titre: string; numeroVersion: string; editeLe?: string }): Promise<Uint8Array> {
   const { times, timesGras } = await lireMesures();
   const titre = versWinAnsi(entete.titre).replace(/\s+/g, ' ').trim() || 'Sans titre';
   const version = versWinAnsi(`Version ${entete.numeroVersion}`);
+  // En-tête : la version et la date d'édition (importante pour un journal) ; le pied garde la version seule.
+  const ligneVersion = entete.editeLe ? versWinAnsi(`Version ${entete.numeroVersion} · Édité le ${entete.editeLe}`) : version;
   const lignesTitre = limiter(couper(titre, timesGras, TAILLE_TITRE_DOC, LARGEUR_TEXTE), MAX_LIGNES_TITRE, timesGras, TAILLE_TITRE_DOC, LARGEUR_TEXTE);
-  const { contenu: tete, margeHaut } = entetePage(lignesTitre, version);
+  const { contenu: tete, margeHaut } = entetePage(lignesTitre, ligneVersion);
   const xVersion = LARGEUR - MARGE_X - times.widthOfTextAtSize(version, TAILLE_PIED);
   // pdfmake place le haut de la ligne : on remonte de l'ascendante pour poser la ligne de base à 36 mm.
   const ascendante = (taille: number) => times.heightAtSize(taille, { descender: false });
