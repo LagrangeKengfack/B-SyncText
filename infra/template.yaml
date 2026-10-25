@@ -314,7 +314,9 @@ Resources:
           BUCKET_DONNEES=${BucketDonnees}
           NODE_ENV=production
           EOF
-          aws s3 cp s3://${BucketArtefacts}/edition/index.mjs /opt/bsynctext/index.mjs
+          aws s3 cp s3://${BucketArtefacts}/edition/index.mjs /tmp/bsynctext-index.mjs
+          # lisible par l'utilisateur du service (umask 077 plus haut, pour le fichier de secrets)
+          install -m 644 /tmp/bsynctext-index.mjs /opt/bsynctext/index.mjs
           systemctl restart bsynctext
           EOS
           chmod 755 /usr/local/bin/bsynctext-maj
