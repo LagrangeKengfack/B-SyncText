@@ -10,7 +10,7 @@ import { pdfDeBase } from './document.js';
 import { envoyeurSes } from './courriel.js';
 import { tamponner } from './pdf.js';
 import { type Ports, traiterDemande, traiterFichier, traiterLien } from './liens.js';
-import { CacheEpuises, erreur, piedDePage, trouverRoute } from './regles.js';
+import { CacheEpuises, erreur, libelleExemplaire, trouverRoute } from './regles.js';
 
 function env(nom: string): string {
   const v = process.env[nom];
@@ -41,7 +41,8 @@ function lesPorts(): Ports {
     nouvelId,
     async produirePdf(lien, k, maintenant) {
       const { pdf, numero } = await pdfDeBase(deps, lien.docId, lien.titre, maintenant);
-      return tamponner(pdf, piedDePage(k, lien.n, numero, maintenant));
+      void numero;
+      return tamponner(pdf, libelleExemplaire(k, lien.n));
     },
     envoyerCourriel: envoyeurSes(ses, env('EMAIL_EXPEDITEUR')),
   };

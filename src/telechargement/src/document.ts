@@ -1,9 +1,11 @@
-// Reconstruction du document au moment du clic (C-3), numéro de version et PDF de base en cache S3.
+// Dernière version numérotée du document (D-012), reconstruction de l'état courant au besoin, PDF de base en cache S3.
 import * as Y from 'yjs';
 import { GetObjectCommand, PutObjectCommand, type S3Client } from '@aws-sdk/client-s3';
 import { GetCommand, PutCommand, QueryCommand, UpdateCommand, type DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { msDuSeq, nouveauSeq, numeroVersion, yjsVersBlocs } from '@b-synctext/commun';
-import { genererPdfBase } from './pdf.js';
+import {
+  FORMAT_VERSION_DEFAUT, estFormatVersion, incrementer, msDuSeq, nouveauSeq, numeroVersion, profondeur, yjsVersBlocs, type FormatVersion,
+} from '@b-synctext/commun';
+import { genererPdf } from './pdf.js';
 import { estRefusCondition } from './regles.js';
 
 export interface DepsDocument {
@@ -63,14 +65,26 @@ export async function reconstruire(d: DepsDocument, docId: string): Promise<{ yd
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Numéro de version de l'état `seq` ; crée une version automatique s'il n'en existe pas. */
-export async function numeroPourEtat(d: DepsDocument, docId: string, seq: string, ydoc: Y.Doc, maintenant: number): Promise<string> {
+function formatDe(doc: Record<string, unknown> | undefined): FormatVersion {
+  return estFormatVersion(doc?.formatVersion) ? doc.formatVersion : FORMAT_VERSION_DEFAUT;
+}
+const niveauxDe = (doc: Record<string, unknown> | undefined): number[] =>
+  [Number(doc?.niv1 ?? 0), Number(doc?.niv2 ?? 0), Number(doc?.niv3 ?? 0)];
+
+/** Version automatique de l'état `seq` s'il n'en a pas encore (dernier chiffre du format, D-011). */
+export async function numeroPourEtat(
+  d: DepsDocument, docId: string, seq: string, ydoc: Y.Doc, maintenant: number,
+): Promise<{ numero: string; versionId?: string }> {
+  const avant = (await d.ddb.send(new GetCommand({ TableName: d.tableDocuments, Key: { docId }, ConsistentRead: true }))).Item;
+  if (!avant) throw new Error(`document ${docId} introuvable`);
+  const format = formatDe(avant);
+  const k = profondeur(format);
   let gagne: Record<string, unknown> | undefined;
   try {
     const r = await d.ddb.send(new UpdateCommand({
       TableName: d.tableDocuments,
       Key: { docId },
-      UpdateExpression: 'ADD versionMineure :un SET derniereVersionSeq = :seq',
+      UpdateExpression: `ADD niv${k} :un SET derniereVersionSeq = :seq`,
       ConditionExpression: 'attribute_exists(docId) AND (attribute_not_exists(derniereVersionSeq) OR derniereVersionSeq <> :seq)',
       ExpressionAttributeValues: { ':un': 1, ':seq': seq },
       ReturnValues: 'ALL_NEW',
@@ -81,22 +95,22 @@ export async function numeroPourEtat(d: DepsDocument, docId: string, seq: string
   }
 
   if (gagne) {
-    const numero = numeroVersion(Number(gagne.versionMajeure ?? 0), Number(gagne.versionMineure ?? 0));
-    await d.ddb.send(new UpdateCommand({
-      TableName: d.tableDocuments,
-      Key: { docId },
-      UpdateExpression: 'SET derniereVersionNumero = :num',
-      ConditionExpression: 'derniereVersionSeq = :seq',
-      ExpressionAttributeValues: { ':num': numero, ':seq': seq },
-    })).catch((e) => { if (!estRefusCondition(e)) throw e; });
+    const numero = numeroVersion(format, niveauxDe(gagne));
     const versionId = nouveauSeq(maintenant);
     const cleS3 = `versions/${docId}/${versionId}.bin`;
     await d.s3.send(new PutObjectCommand({ Bucket: d.bucket, Key: cleS3, Body: Y.encodeStateAsUpdate(ydoc), ContentType: 'application/octet-stream' }));
     await d.ddb.send(new PutCommand({
       TableName: d.tableVersions,
-      Item: { docId, versionId, numero, type: 'auto', auteur: 'telechargement', creeLe: maintenant, seqEtat: seq, cleS3 },
+      Item: { docId, versionId, numero, type: 'auto', auteur: 'telechargement', auteurs: ['telechargement'], creeLe: maintenant, seqEtat: seq, cleS3 },
     }));
-    return numero;
+    await d.ddb.send(new UpdateCommand({
+      TableName: d.tableDocuments,
+      Key: { docId },
+      UpdateExpression: 'SET derniereVersionNumero = :num, derniereVersionId = :id',
+      ConditionExpression: 'derniereVersionSeq = :seq',
+      ExpressionAttributeValues: { ':num': numero, ':id': versionId, ':seq': seq },
+    })).catch((e) => { if (!estRefusCondition(e)) throw e; });
+    return { numero, versionId };
   }
 
   // Une version existe déjà pour cet état (ou une autre instance est en train de la créer).
@@ -104,24 +118,45 @@ export async function numeroPourEtat(d: DepsDocument, docId: string, seq: string
   for (let essai = 0; essai < 5; essai++) {
     doc = (await d.ddb.send(new GetCommand({ TableName: d.tableDocuments, Key: { docId }, ConsistentRead: true }))).Item;
     if (!doc) throw new Error(`document ${docId} introuvable`);
-    if (doc.derniereVersionSeq === seq && typeof doc.derniereVersionNumero === 'string') return doc.derniereVersionNumero;
+    if (doc.derniereVersionSeq === seq && typeof doc.derniereVersionNumero === 'string') {
+      return { numero: doc.derniereVersionNumero, versionId: typeof doc.derniereVersionId === 'string' ? doc.derniereVersionId : undefined };
+    }
     if (doc.derniereVersionSeq !== seq) break;
     await pause(100);
   }
-  return numeroVersion(Number(doc?.versionMajeure ?? 0), Number(doc?.versionMineure ?? 0));
+  return { numero: numeroVersion(formatDe(doc), niveauxDe(doc)) };
 }
 
-/** PDF de base de l'état courant : réutilisé s'il existe, sinon généré et rangé dans S3. */
+/**
+ * PDF de base : la **dernière version numérotée** du document (D-012). S'il n'y a encore aucune version,
+ * l'état courant est capturé en version automatique, puis servi. Un PDF par version, en cache S3.
+ */
 export async function pdfDeBase(d: DepsDocument, docId: string, titre: string, maintenant: number): Promise<{ pdf: Uint8Array; numero: string }> {
-  const { ydoc, seq } = await reconstruire(d, docId);
-  const cle = `pdf/${docId}/${seq}.pdf`;
+  const doc = (await d.ddb.send(new GetCommand({ TableName: d.tableDocuments, Key: { docId }, ConsistentRead: true }))).Item;
+  if (!doc) throw new Error(`document ${docId} introuvable`);
+  let versionId = typeof doc.derniereVersionId === 'string' ? doc.derniereVersionId : undefined;
+  let numero = typeof doc.derniereVersionNumero === 'string' ? doc.derniereVersionNumero : undefined;
+  let etat: Uint8Array | undefined;
+  if (versionId && numero) {
+    const v = (await d.ddb.send(new GetCommand({ TableName: d.tableVersions, Key: { docId, versionId } }))).Item;
+    if (typeof v?.cleS3 === 'string') etat = (await lireObjet(d.s3, d.bucket, v.cleS3))?.corps;
+  }
+  if (!etat) {
+    const { ydoc, seq } = await reconstruire(d, docId);
+    const r = await numeroPourEtat(d, docId, seq, ydoc, maintenant);
+    numero = r.numero;
+    versionId = r.versionId ?? seq;
+    etat = Y.encodeStateAsUpdate(ydoc);
+  }
+  const cle = `pdf/${docId}/${versionId}.pdf`;
   const existant = await lireObjet(d.s3, d.bucket, cle);
   if (existant?.meta['numero-version']) return { pdf: existant.corps, numero: existant.meta['numero-version'] };
 
-  const numero = await numeroPourEtat(d, docId, seq, ydoc, maintenant);
-  const pdf = await genererPdfBase(titre, yjsVersBlocs(ydoc));
+  const ydoc = new Y.Doc();
+  Y.applyUpdate(ydoc, etat);
+  const pdf = await genererPdf(yjsVersBlocs(ydoc), { titre, numeroVersion: numero! });
   await d.s3.send(new PutObjectCommand({
-    Bucket: d.bucket, Key: cle, Body: pdf, ContentType: 'application/pdf', Metadata: { 'numero-version': numero },
+    Bucket: d.bucket, Key: cle, Body: pdf, ContentType: 'application/pdf', Metadata: { 'numero-version': numero! },
   }));
-  return { pdf, numero };
+  return { pdf, numero: numero! };
 }
