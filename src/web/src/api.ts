@@ -5,6 +5,7 @@ export const CLE_JETON = 'bsynctext.jeton'
 export interface Credit { restant: number; rechargeA: number }
 export interface Redacteur { email: string; nom: string; credit: Credit; bloqueJusqua?: number }
 export type Role = 'principal' | 'proprietaire' | 'membre'
+export type ModeTelechargement = 'version' | 'direct'
 export type FormatVersion = 'v.x' | 'v.x.x' | 'v.x.x.x'
 export interface PersonneRef { email?: string; nom: string }
 export interface DocumentResume {
@@ -23,6 +24,7 @@ export interface DocumentDetail {
   membres: Membre[]
   lienInvitation?: string
   formatVersion?: FormatVersion
+  modeTelechargement?: ModeTelechargement
   derniereVersion?: { numero: string; versionId: string } | null
 }
 export interface Version {
@@ -123,6 +125,7 @@ export const api = {
     appel<{ docId: string; titre: string; role: Role; formatVersion: FormatVersion; lienInvitation: string }>('POST', '/documents', { corps: { titre, formatVersion } }),
   document: (docId: string) => appel<DocumentDetail>('GET', `/documents/${enc(docId)}`),
   renommer: (docId: string, titre: string) => appel<void>('PATCH', `/documents/${enc(docId)}`, { corps: { titre } }),
+  changerMode: (docId: string, modeTelechargement: ModeTelechargement) => appel<void>('PATCH', `/documents/${enc(docId)}`, { corps: { modeTelechargement } }),
   ajouterMembre: (docId: string, email: string) =>
     appel<void>('POST', `/documents/${enc(docId)}/membres`, { corps: { email } }),
   changerRole: (docId: string, email: string, role: 'proprietaire' | 'membre') =>

@@ -194,6 +194,12 @@ export default function Editeur() {
     setPanneau(false)
   }
 
+  async function changerMode() {
+    if (!doc) return
+    const mode = doc.modeTelechargement === 'direct' ? 'version' : 'direct'
+    try { await api.changerMode(docId, mode); setDoc({ ...doc, modeTelechargement: mode }) } catch { /* message déjà affiché par l'API */ }
+  }
+
   async function renommer() {
     if (!doc || titre.trim() === doc.titre || !titre.trim()) return
     try { await api.renommer(docId, titre.trim()); setDoc({ ...doc, titre: titre.trim() }) } catch { setTitre(doc.titre) }
@@ -246,6 +252,12 @@ export default function Editeur() {
               <Avatar key={p.email} nom={p.nom} couleur={couleurPour(p.email)} titre={i === 0 ? `${p.nom} (vous)` : p.nom} />
             ))}
           </div>
+          {editable && doc && (
+            <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={changerMode}
+              title={doc.modeTelechargement === 'direct' ? 'Les liens donnent le document tel qu’il est au moment du clic. Cliquer pour donner la dernière version déclarée.' : 'Les liens donnent la dernière version déclarée. Cliquer pour donner le document en temps réel.'}>
+              <Icone nom="telecharger" />{doc.modeTelechargement === 'direct' ? 'Téléchargement : temps réel' : 'Téléchargement : dernière version'}
+            </button>
+          )}
           {compact && <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={() => setPanneau(true)}><Icone nom="historique" />Versions</button>}
           <button className="bouton bouton--secondaire bouton--petit" type="button" onClick={() => setFenetre('liens')}><Icone nom="lien" />Liens</button>
           {estProprietaire && <button className="bouton bouton--principal bouton--petit" type="button" onClick={() => setFenetre('partager')}><Icone nom="partager" />Partager</button>}
