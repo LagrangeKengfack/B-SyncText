@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: B-SyncText - generateur de charge temporaire (a supprimer apres les tests)
+
+# Machine qui lance les tests de concurrence et de charge depuis la meme region,
+# pour que la connexion de l'auteur ne limite pas les mesures. Pilotee par SSM, sans SSH.
+# Creation et suppression : infra/generateur.sh
+
+Parameters:
+  SousReseau:
+    Type: AWS::EC2::Subnet::Id
+  Vpc:
+    Type: AWS::EC2::VPC::Id
+  BucketArtefacts:
+    Type: String
+  ImageX86:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+  VersionNode:
+    Type: String
+    Default: v22.23.4
+
+Resources:
+  Groupe:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: generateur de charge - aucune entree
+      VpcId: !Ref Vpc
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement: [{ Effect: Allow, Principal: { Service: ec2.amazonaws.com }, Action: sts:AssumeRole }]
+      ManagedPolicyArns: [arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore]
+      Policies:
+        - PolicyName: charge
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject]
+                Resource: !Sub arn:aws:s3:::${BucketArtefacts}/charge/*
+  Profil:
+    Type: AWS::IAM::InstanceProfile
+    Properties: { Roles: [!Ref Role] }
+  Machine:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: c7i-flex.large
+      ImageId: !Ref ImageX86
+      SubnetId: !Ref SousReseau
+      SecurityGroupIds: [!Ref Groupe]
+      IamInstanceProfile: !Ref Profil
+      MetadataOptions: { HttpTokens: required, HttpEndpoint: enabled }
+      Tags: [{ Key: Name, Value: bsynctext-generateur }]
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euxo pipefail
+          dnf install -y tar xz
+          curl -fsSL https://nodejs.org/dist/${VersionNode}/node-${VersionNode}-linux-x64.tar.xz -o /tmp/node.tar.xz
+          mkdir -p /opt/node && tar -xJf /tmp/node.tar.xz -C /opt/node --strip-components=1
+          ln -sf /opt/node/bin/node /usr/local/bin/node
+          curl -fsSL https://github.com/grafana/k6/releases/download/v0.54.0/k6-v0.54.0-linux-amd64.tar.gz | tar xz -C /usr/local/bin --strip-components=1 k6-v0.54.0-linux-amd64/k6
+          # beaucoup de connexions simultanees
+          echo "* soft nofile 200000" >> /etc/security/limits.conf
+          echo "* hard nofile 200000" >> /etc/security/limits.conf
+          sysctl -w net.ipv4.ip_local_port_range="1024 65000"
+          touch /opt/pret
+
+Outputs:
+  IdMachine:
+    Value: !Ref Machine

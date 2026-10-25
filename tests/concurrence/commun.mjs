@@ -13,7 +13,7 @@ import { extractText, getDocumentProxy } from 'unpdf';
 export { Y };
 export const BASE_URL = (process.env.BASE_URL ?? '').replace(/\/+$/, '');
 const ici = dirname(fileURLToPath(import.meta.url));
-export const DOSSIER_RESULTATS = join(ici, '..', '..', 'docs', 'tests', 'resultats');
+export const DOSSIER_RESULTATS = process.env.RESULTATS_DIR ?? join(ici, '..', '..', 'docs', 'tests', 'resultats');
 
 export const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 export const sha256 = (s) => createHash('sha256').update(s).digest('hex');
