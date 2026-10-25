@@ -34,7 +34,6 @@ describe('PDF', () => {
     const textes = await pages(base);
     expect(textes.length).toBeGreaterThanOrEqual(2);
     for (const t of textes) {
-      expect(t.replace(/ /g, '')).toContain('B-SYNCTEXT');
       expect(t).toContain('Bulletin « été »');
       expect(t).toContain('Version v1.2');
       expect(t).not.toMatch(/\d{1,2}\/\d{1,2}\/\d{4}|\d{1,2}:\d{2}/);

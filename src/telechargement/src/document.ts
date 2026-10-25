@@ -159,7 +159,7 @@ export async function pdfDeBase(d: DepsDocument, docId: string, titre: string, m
 
   const ydoc = new Y.Doc();
   Y.applyUpdate(ydoc, etat);
-  const pdf = await genererPdf(yjsVersBlocs(ydoc), { titre, numeroVersion: numero!, editeLe: `${dateHeureWat(editeLe)} (WAT)` });
+  const pdf = await genererPdf(yjsVersBlocs(ydoc), { titre, numeroVersion: numero!, editeLe: dateHeureWat(editeLe).replace(' ', ' à ') });
   await d.s3.send(new PutObjectCommand({
     Bucket: d.bucket, Key: cle, Body: pdf, ContentType: 'application/pdf', Metadata: { 'numero-version': numero! },
   }));

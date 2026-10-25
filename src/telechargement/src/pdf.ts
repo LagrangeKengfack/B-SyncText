@@ -129,10 +129,7 @@ const MAX_LIGNES_TITRE = 2;
 /** En-tête de page : association, titre, version, filet. Renvoie le contenu et la marge haute résultante. */
 function entetePage(lignesTitre: string[], version: string): { contenu: Content[]; margeHaut: number } {
   let y = MARGE_HAUT;
-  const contenu: Content[] = [
-    { text: 'B-SYNCTEXT', font: 'Helvetica', bold: true, fontSize: 7.5, characterSpacing: 1.6, color: ORANGE_TEXTE, absolutePosition: { x: MARGE_X, y } },
-  ];
-  y += 15;
+  const contenu: Content[] = [];
   for (const ligne of lignesTitre) {
     contenu.push({ text: ligne, font: 'Times', bold: true, fontSize: TAILLE_TITRE_DOC, lineHeight: 1, color: TEXTE, absolutePosition: { x: MARGE_X, y } });
     y += PAS_TITRE_DOC;
