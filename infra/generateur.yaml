@@ -38,6 +38,10 @@ Resources:
               - Effect: Allow
                 Action: [s3:GetObject, s3:PutObject]
                 Resource: !Sub arn:aws:s3:::${BucketArtefacts}/charge/*
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !Sub arn:aws:s3:::${BucketArtefacts}
+                Condition: { StringLike: { "s3:prefix": ["charge/*"] } }
   Profil:
     Type: AWS::IAM::InstanceProfile
     Properties: { Roles: [!Ref Role] }
