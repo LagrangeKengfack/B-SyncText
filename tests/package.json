@@ -1,0 +1,12 @@
+{
+  "name": "tests",
+  "private": true,
+  "type": "module",
+  "description": "Scripts de concurrence et de charge (lancés contre la pile déployée)",
+  "dependencies": {
+    "@hocuspocus/provider": "^4.7.1",
+    "unpdf": "^1.0.0",
+    "ws": "^8.18.0",
+    "yjs": "^13.6.33"
+  }
+}
