@@ -75,6 +75,7 @@
 | `GET /documents` | → `[{docId, titre, role, principal, modifieLe, connectes}]` | documents dont on est membre |
 | `POST /documents` | `{titre}` → `{docId, …}` | le créateur devient principal |
 | `GET /documents/{docId}` | → `{docId, titre, role, membres:[{email, nom, role}], lienInvitation}` | membre ; `lienInvitation` seulement pour un propriétaire |
+| `PATCH /documents/{docId}` | `{titre}` → `{docId, titre}` | membre ; 1 à 120 caractères |
 | `POST /documents/{docId}/membres` | `{email}` → `201` | propriétaire |
 | `PATCH /documents/{docId}/membres/{email}` | `{role: "proprietaire" \| "membre"}` → `200` | propriétaire. Retirer le rôle à un autre : principal seulement. Renoncer : 409 si on est le dernier propriétaire |
 | `POST /documents/{docId}/invitation` | → `{lienInvitation}` | propriétaire ; régénère, l'ancien lien renvoie 410 |
