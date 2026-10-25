@@ -127,6 +127,23 @@ export async function numeroPourEtat(
   return { numero: numeroVersion(formatDe(doc), niveauxDe(doc)) };
 }
 
+/** Verrou court (`pdfEnCours`) : vrai si c'est cette exécution qui doit générer le PDF de `versionId`. */
+async function prendreVerrouPdf(d: DepsDocument, docId: string, versionId: string, maintenant: number): Promise<boolean> {
+  try {
+    await d.ddb.send(new UpdateCommand({
+      TableName: d.tableDocuments,
+      Key: { docId },
+      UpdateExpression: 'SET pdfEnCours = :v, pdfEnCoursDepuis = :t',
+      ConditionExpression: 'attribute_not_exists(pdfEnCours) OR pdfEnCours <> :v OR pdfEnCoursDepuis < :limite',
+      ExpressionAttributeValues: { ':v': versionId, ':t': maintenant, ':limite': maintenant - 20_000 },
+    }));
+    return true;
+  } catch (e) {
+    if (estRefusCondition(e)) return false;
+    throw e;
+  }
+}
+
 /**
  * PDF de base, selon le mode du document (D-012) :
  * - `version` : la dernière version déclarée par un rédacteur ; s'il n'y en a aucune, l'état courant (capturé) ;
@@ -156,6 +173,17 @@ export async function pdfDeBase(d: DepsDocument, docId: string, titre: string, m
   const cle = `pdf/${docId}/${versionId}.pdf`;
   const existant = await lireObjet(d.s3, d.bucket, cle);
   if (existant?.meta['numero-version']) return { pdf: existant.corps, numero: existant.meta['numero-version'] };
+
+  // Au pic, des centaines de visiteurs demandent le même PDF avant qu'il existe : une seule exécution
+  // le génère (verrou de 20 s sur le document), les autres attendent qu'il apparaisse dans S3.
+  if (!(await prendreVerrouPdf(d, docId, versionId!, maintenant))) {
+    for (let essai = 0; essai < 25; essai++) {
+      await pause(400);
+      const pret = await lireObjet(d.s3, d.bucket, cle);
+      if (pret?.meta['numero-version']) return { pdf: pret.corps, numero: pret.meta['numero-version'] };
+    }
+    // Le générateur n'a pas abouti : on génère soi-même.
+  }
 
   const ydoc = new Y.Doc();
   Y.applyUpdate(ydoc, etat);
