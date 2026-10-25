@@ -23,7 +23,8 @@ async function telecharger() {
 const avant = await telecharger();
 const marqueur = `[t04-${idCourt()}]`;
 const accuse = await c.inserer(marqueur, 'fin');
-await dormir(500);
+// Le PDF est la dernière version numérotée (D-012) : le serveur en crée une après 5 à 10 s de calme.
+await dormir(12_000);
 const apres = await telecharger(); // utilisé à T1
 c.fermer();
 

@@ -151,7 +151,7 @@ export async function lirePdf(rep) {
     r.texte = await texteDuPdf(rep.octets);
     const m = /Exemplaire\s+(\d+)\s*\/\s*(\d+)/.exec(r.texte);
     if (m) { r.numeroPdf = Number(m[1]); r.n = Number(m[2]); }
-    const v = /version\s+(v\d+(?:\.\d+)?)/i.exec(r.texte);
+    const v = /version\s+(v\d+(?:\.\d+){0,2})/i.exec(r.texte);
     if (v) r.version = v[1];
   } catch (e) {
     r.erreurPdf = String(e?.message ?? e);
