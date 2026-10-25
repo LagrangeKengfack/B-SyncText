@@ -32,7 +32,7 @@ Aucune clé d'accès nulle part : les composants utilisent leur rôle, et le dé
 
 ## 4. Réseau et données
 - **EC2** :
-  - le port 80 n'est ouvert qu'à la liste d'adresses CloudFront gérée par AWS ;
+  - le port 8080 n'est ouvert qu'à la liste d'adresses CloudFront gérée par AWS ;
   - le serveur refuse toute requête sans l'en-tête secret ajouté par CloudFront ;
   - aucun port 22 ; IMDSv2 obligatoire.
 - **HTTPS partout** côté utilisateur : CloudFront redirige HTTP vers HTTPS.

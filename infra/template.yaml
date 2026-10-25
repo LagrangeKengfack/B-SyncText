@@ -1,0 +1,592 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: B-SyncText - editeur de documents partage (eu-north-1)
+
+# Toute l'infrastructure de l'application. Deploiement : infra/deployer.sh ; suppression : infra/supprimer.sh.
+# Description lisible : docs/conception/08-infrastructure.md
+
+Parameters:
+  EmailAuteur:
+    Type: String
+    Description: adresse des alertes de budget et expediteur SES (verifiee par e-mail)
+  BucketArtefacts:
+    Type: String
+    Description: bucket du code (Lambda, serveur d'edition), cree par deployer.sh
+  CleCodeApi:
+    Type: String
+  CleCodeTelechargement:
+    Type: String
+  SecretOrigine:
+    Type: String
+    NoEcho: true
+    Description: en-tete ajoute par CloudFront, verifie par le serveur d'edition
+  ImageArm:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
+  PrefixesCloudFront:
+    Type: String
+    Default: pl-fab65393
+    Description: liste d'adresses CloudFront geree par AWS (com.amazonaws.global.cloudfront.origin-facing)
+  VersionNode:
+    Type: String
+    Default: v22.23.4
+
+Resources:
+  # ---------- Reseau ----------
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.20.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags: [{ Key: Name, Value: bsynctext }]
+  Passerelle:
+    Type: AWS::EC2::InternetGateway
+  AttachementPasserelle:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties: { VpcId: !Ref Vpc, InternetGatewayId: !Ref Passerelle }
+  SousReseauA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.20.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags: [{ Key: Name, Value: bsynctext-public-a }]
+  SousReseauB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.20.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags: [{ Key: Name, Value: bsynctext-public-b }]
+  TableRoutage:
+    Type: AWS::EC2::RouteTable
+    Properties: { VpcId: !Ref Vpc }
+  RouteInternet:
+    Type: AWS::EC2::Route
+    DependsOn: AttachementPasserelle
+    Properties: { RouteTableId: !Ref TableRoutage, DestinationCidrBlock: 0.0.0.0/0, GatewayId: !Ref Passerelle }
+  AssociationA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: { SubnetId: !Ref SousReseauA, RouteTableId: !Ref TableRoutage }
+  AssociationB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: { SubnetId: !Ref SousReseauB, RouteTableId: !Ref TableRoutage }
+  # Points de terminaison passerelle (gratuits) : S3 et DynamoDB sans passer par internet
+  PointS3:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      VpcEndpointType: Gateway
+      RouteTableIds: [!Ref TableRoutage]
+  PointDynamo:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.dynamodb
+      VpcEndpointType: Gateway
+      RouteTableIds: [!Ref TableRoutage]
+  GroupeEdition:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: serveur d'edition - port 8080 ouvert a CloudFront seulement
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourcePrefixListId: !Ref PrefixesCloudFront
+          Description: CloudFront uniquement
+
+  # ---------- Donnees ----------
+  TableRedacteurs:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions: [{ AttributeName: email, AttributeType: S }]
+      KeySchema: [{ AttributeName: email, KeyType: HASH }]
+  TableCredits:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: email, AttributeType: S }
+        - { AttributeName: jour, AttributeType: S }
+      KeySchema:
+        - { AttributeName: email, KeyType: HASH }
+        - { AttributeName: jour, KeyType: RANGE }
+      TimeToLiveSpecification: { AttributeName: expire, Enabled: true }
+  TableDocuments:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions: [{ AttributeName: docId, AttributeType: S }]
+      KeySchema: [{ AttributeName: docId, KeyType: HASH }]
+  TableMembres:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: docId, AttributeType: S }
+        - { AttributeName: email, AttributeType: S }
+      KeySchema:
+        - { AttributeName: docId, KeyType: HASH }
+        - { AttributeName: email, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: parEmail
+          KeySchema:
+            - { AttributeName: email, KeyType: HASH }
+            - { AttributeName: docId, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+  TableJournal:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: docId, AttributeType: S }
+        - { AttributeName: seq, AttributeType: S }
+      KeySchema:
+        - { AttributeName: docId, KeyType: HASH }
+        - { AttributeName: seq, KeyType: RANGE }
+      TimeToLiveSpecification: { AttributeName: expire, Enabled: true }
+  TableVersions:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: docId, AttributeType: S }
+        - { AttributeName: versionId, AttributeType: S }
+      KeySchema:
+        - { AttributeName: docId, KeyType: HASH }
+        - { AttributeName: versionId, KeyType: RANGE }
+  TableLiens:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: lienId, AttributeType: S }
+        - { AttributeName: docId, AttributeType: S }
+        - { AttributeName: creeLe, AttributeType: N }
+      KeySchema: [{ AttributeName: lienId, KeyType: HASH }]
+      GlobalSecondaryIndexes:
+        - IndexName: parDocument
+          KeySchema:
+            - { AttributeName: docId, KeyType: HASH }
+            - { AttributeName: creeLe, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+  TableReservations:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: ticket, AttributeType: S }
+        - { AttributeName: attente, AttributeType: S }
+        - { AttributeName: expireA, AttributeType: N }
+      KeySchema: [{ AttributeName: ticket, KeyType: HASH }]
+      GlobalSecondaryIndexes:
+        - IndexName: enAttente
+          KeySchema:
+            - { AttributeName: attente, KeyType: HASH }
+            - { AttributeName: expireA, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+  TableCompteurs:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions: [{ AttributeName: cle, AttributeType: S }]
+      KeySchema: [{ AttributeName: cle, KeyType: HASH }]
+      TimeToLiveSpecification: { AttributeName: expire, Enabled: true }
+
+  BucketDonnees:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        { BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true }
+      BucketEncryption:
+        ServerSideEncryptionConfiguration: [{ ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 } }]
+      OwnershipControls: { Rules: [{ ObjectOwnership: BucketOwnerEnforced }] }
+  BucketSite:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        { BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true }
+      BucketEncryption:
+        ServerSideEncryptionConfiguration: [{ ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 } }]
+      OwnershipControls: { Rules: [{ ObjectOwnership: BucketOwnerEnforced }] }
+  PolitiqueBucketSite:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BucketSite
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: { Service: cloudfront.amazonaws.com }
+            Action: s3:GetObject
+            Resource: !Sub ${BucketSite.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}
+
+  # ---------- Serveur d'edition (EC2) ----------
+  RoleEdition:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement: [{ Effect: Allow, Principal: { Service: ec2.amazonaws.com }, Action: sts:AssumeRole }]
+      ManagedPolicyArns: [arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore]
+      Policies:
+        - PolicyName: edition
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:Query, dynamodb:ConditionCheckItem]
+                Resource:
+                  - !GetAtt TableRedacteurs.Arn
+                  - !GetAtt TableCredits.Arn
+                  - !GetAtt TableDocuments.Arn
+                  - !GetAtt TableMembres.Arn
+                  - !GetAtt TableJournal.Arn
+                  - !GetAtt TableVersions.Arn
+                  - !GetAtt TableCompteurs.Arn
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject]
+                Resource: [!Sub "${BucketDonnees.Arn}/etats/*", !Sub "${BucketDonnees.Arn}/versions/*"]
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !GetAtt BucketDonnees.Arn
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub arn:aws:s3:::${BucketArtefacts}/edition/*
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource:
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/bsynctext/secret-session
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/bsynctext/secret-origine
+  ProfilEdition:
+    Type: AWS::IAM::InstanceProfile
+    Properties: { Roles: [!Ref RoleEdition] }
+  ServeurEdition:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t4g.small
+      ImageId: !Ref ImageArm
+      SubnetId: !Ref SousReseauA
+      SecurityGroupIds: [!Ref GroupeEdition]
+      IamInstanceProfile: !Ref ProfilEdition
+      MetadataOptions: { HttpTokens: required, HttpEndpoint: enabled }
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs: { VolumeSize: 8, VolumeType: gp3, Encrypted: true, DeleteOnTermination: true }
+      Tags: [{ Key: Name, Value: bsynctext-edition }]
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # Installation du serveur d'edition au premier demarrage
+          set -euxo pipefail
+          export AWS_DEFAULT_REGION=${AWS::Region}
+          dnf install -y tar xz
+          curl -fsSL https://nodejs.org/dist/${VersionNode}/node-${VersionNode}-linux-arm64.tar.xz -o /tmp/node.tar.xz
+          mkdir -p /opt/node && tar -xJf /tmp/node.tar.xz -C /opt/node --strip-components=1
+          id bsync || useradd --system --no-create-home --shell /sbin/nologin bsync
+          mkdir -p /opt/bsynctext
+          # Le secret d'origine est lu dans SSM au demarrage : il n'apparait pas dans ce script
+          cat > /usr/local/bin/bsynctext-maj <<'EOS'
+          #!/bin/bash
+          # Recupere la derniere version du serveur et le relance (appele par deployer.sh via SSM)
+          set -euo pipefail
+          export AWS_DEFAULT_REGION=${AWS::Region}
+          SECRET=$(aws ssm get-parameter --name /bsynctext/secret-origine --with-decryption --query Parameter.Value --output text)
+          umask 077
+          cat > /etc/bsynctext.env <<EOF
+          PORT=8080
+          AWS_REGION=${AWS::Region}
+          SECRET_ORIGINE=$SECRET
+          PARAM_SECRET_SESSION=/bsynctext/secret-session
+          TABLE_REDACTEURS=${TableRedacteurs}
+          TABLE_CREDITS=${TableCredits}
+          TABLE_DOCUMENTS=${TableDocuments}
+          TABLE_MEMBRES=${TableMembres}
+          TABLE_JOURNAL=${TableJournal}
+          TABLE_VERSIONS=${TableVersions}
+          TABLE_COMPTEURS=${TableCompteurs}
+          BUCKET_DONNEES=${BucketDonnees}
+          NODE_ENV=production
+          EOF
+          aws s3 cp s3://${BucketArtefacts}/edition/index.mjs /opt/bsynctext/index.mjs
+          systemctl restart bsynctext
+          EOS
+          chmod 755 /usr/local/bin/bsynctext-maj
+          cat > /etc/systemd/system/bsynctext.service <<'EOS'
+          [Unit]
+          Description=B-SyncText serveur d'edition
+          After=network-online.target
+          [Service]
+          User=bsync
+          EnvironmentFile=/etc/bsynctext.env
+          ExecStart=/opt/node/bin/node /opt/bsynctext/index.mjs
+          Restart=always
+          RestartSec=2
+          TimeoutStopSec=30
+          LimitNOFILE=65536
+          [Install]
+          WantedBy=multi-user.target
+          EOS
+          systemctl daemon-reload
+          systemctl enable bsynctext
+          /usr/local/bin/bsynctext-maj || echo "code pas encore publie"
+
+  # ---------- Fonctions Lambda ----------
+  JournauxApi:
+    Type: AWS::Logs::LogGroup
+    Properties: { RetentionInDays: 7 }
+  JournauxTelechargement:
+    Type: AWS::Logs::LogGroup
+    Properties: { RetentionInDays: 7 }
+  RoleApi:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement: [{ Effect: Allow, Principal: { Service: lambda.amazonaws.com }, Action: sts:AssumeRole }]
+      Policies:
+        - PolicyName: api
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub ${JournauxApi.Arn}:*
+              - Effect: Allow
+                Action:
+                  [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:DeleteItem,
+                   dynamodb:Query, dynamodb:Scan, dynamodb:BatchGetItem, dynamodb:ConditionCheckItem]
+                Resource:
+                  - !GetAtt TableRedacteurs.Arn
+                  - !GetAtt TableCredits.Arn
+                  - !GetAtt TableDocuments.Arn
+                  - !GetAtt TableMembres.Arn
+                  - !Sub ${TableMembres.Arn}/index/parEmail
+                  - !GetAtt TableVersions.Arn
+                  - !GetAtt TableLiens.Arn
+                  - !Sub ${TableLiens.Arn}/index/parDocument
+                  - !GetAtt TableCompteurs.Arn
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: [!Sub "${BucketDonnees.Arn}/versions/*", !Sub "${BucketDonnees.Arn}/etats/*"]
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource:
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/bsynctext/secret-session
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/bsynctext/code-admin
+  RoleTelechargement:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement: [{ Effect: Allow, Principal: { Service: lambda.amazonaws.com }, Action: sts:AssumeRole }]
+      Policies:
+        - PolicyName: telechargement
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub ${JournauxTelechargement.Arn}:*
+              - Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:Query, dynamodb:ConditionCheckItem]
+                Resource:
+                  - !GetAtt TableLiens.Arn
+                  - !GetAtt TableReservations.Arn
+                  - !Sub ${TableReservations.Arn}/index/enAttente
+                  - !GetAtt TableJournal.Arn
+                  - !GetAtt TableDocuments.Arn
+                  - !GetAtt TableVersions.Arn
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject]
+                Resource: [!Sub "${BucketDonnees.Arn}/pdf/*", !Sub "${BucketDonnees.Arn}/versions/*"]
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub ${BucketDonnees.Arn}/etats/*
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !GetAtt BucketDonnees.Arn
+              - Effect: Allow
+                Action: ses:SendEmail
+                Resource: !Sub arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/*
+  FonctionApi:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: nodejs22.x
+      Architectures: [arm64]
+      Handler: index.handler
+      MemorySize: 512
+      Timeout: 10
+      Role: !GetAtt RoleApi.Arn
+      Code: { S3Bucket: !Ref BucketArtefacts, S3Key: !Ref CleCodeApi }
+      LoggingConfig: { LogGroup: !Ref JournauxApi }
+      Environment:
+        Variables:
+          TABLE_REDACTEURS: !Ref TableRedacteurs
+          TABLE_CREDITS: !Ref TableCredits
+          TABLE_DOCUMENTS: !Ref TableDocuments
+          TABLE_MEMBRES: !Ref TableMembres
+          TABLE_VERSIONS: !Ref TableVersions
+          TABLE_LIENS: !Ref TableLiens
+          TABLE_COMPTEURS: !Ref TableCompteurs
+          BUCKET_DONNEES: !Ref BucketDonnees
+          PARAM_SECRET_SESSION: /bsynctext/secret-session
+          PARAM_CODE_ADMIN: /bsynctext/code-admin
+  FonctionTelechargement:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: nodejs22.x
+      Architectures: [arm64]
+      Handler: index.handler
+      MemorySize: 1024
+      Timeout: 15
+      ReservedConcurrentExecutions: 250
+      Role: !GetAtt RoleTelechargement.Arn
+      Code: { S3Bucket: !Ref BucketArtefacts, S3Key: !Ref CleCodeTelechargement }
+      LoggingConfig: { LogGroup: !Ref JournauxTelechargement }
+      Environment:
+        Variables:
+          TABLE_LIENS: !Ref TableLiens
+          TABLE_RESERVATIONS: !Ref TableReservations
+          TABLE_JOURNAL: !Ref TableJournal
+          TABLE_DOCUMENTS: !Ref TableDocuments
+          TABLE_VERSIONS: !Ref TableVersions
+          BUCKET_DONNEES: !Ref BucketDonnees
+          EMAIL_EXPEDITEUR: !Ref EmailAuteur
+
+  # ---------- API HTTP ----------
+  ApiHttp:
+    Type: AWS::ApiGatewayV2::Api
+    Properties: { Name: bsynctext, ProtocolType: HTTP }
+  EtapeApi:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref ApiHttp
+      StageName: $default
+      AutoDeploy: true
+      # Limite de debit : au-dela, 429, que la page de telechargement traduit en « Patientez »
+      DefaultRouteSettings: { ThrottlingRateLimit: 3000, ThrottlingBurstLimit: 3000 }
+  IntegrationApi:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiHttp
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt FonctionApi.Arn
+      PayloadFormatVersion: "2.0"
+  IntegrationTelechargement:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiHttp
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt FonctionTelechargement.Arn
+      PayloadFormatVersion: "2.0"
+  RouteApi:
+    Type: AWS::ApiGatewayV2::Route
+    Properties: { ApiId: !Ref ApiHttp, RouteKey: "ANY /api/{proxy+}", Target: !Sub "integrations/${IntegrationApi}" }
+  RouteLien:
+    Type: AWS::ApiGatewayV2::Route
+    Properties: { ApiId: !Ref ApiHttp, RouteKey: "GET /api/liens/{lienId}", Target: !Sub "integrations/${IntegrationTelechargement}" }
+  RouteDemandes:
+    Type: AWS::ApiGatewayV2::Route
+    Properties: { ApiId: !Ref ApiHttp, RouteKey: "POST /api/liens/{lienId}/demandes", Target: !Sub "integrations/${IntegrationTelechargement}" }
+  RouteFichier:
+    Type: AWS::ApiGatewayV2::Route
+    Properties: { ApiId: !Ref ApiHttp, RouteKey: "GET /api/liens/{lienId}/fichier", Target: !Sub "integrations/${IntegrationTelechargement}" }
+  PermissionApi:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref FonctionApi
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiHttp}/*
+  PermissionTelechargement:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref FonctionTelechargement
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiHttp}/*
+
+  # ---------- CloudFront ----------
+  AccesOrigineS3:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub bsynctext-site-${AWS::StackName}
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+  FonctionPagesApplication:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub bsynctext-pages-${AWS::StackName}
+      AutoPublish: true
+      FunctionConfig: { Comment: chemins de l'application vers index.html, Runtime: cloudfront-js-2.0 }
+      FunctionCode: |
+        function handler(event) {
+          var req = event.request;
+          if (req.uri.indexOf('.') === -1) { req.uri = '/index.html'; }
+          return req;
+        }
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: B-SyncText
+        HttpVersion: http2and3
+        PriceClass: PriceClass_100
+        DefaultRootObject: index.html
+        Origins:
+          - Id: site
+            DomainName: !GetAtt BucketSite.RegionalDomainName
+            OriginAccessControlId: !Ref AccesOrigineS3
+            S3OriginConfig: { OriginAccessIdentity: "" }
+          - Id: api
+            DomainName: !Sub ${ApiHttp}.execute-api.${AWS::Region}.amazonaws.com
+            CustomOriginConfig: { OriginProtocolPolicy: https-only, OriginSSLProtocols: [TLSv1.2] }
+          - Id: edition
+            DomainName: !GetAtt ServeurEdition.PublicDnsName
+            CustomOriginConfig: { OriginProtocolPolicy: http-only, HTTPPort: 8080 }
+            OriginCustomHeaders: [{ HeaderName: x-origine-secret, HeaderValue: !Ref SecretOrigine }]
+        DefaultCacheBehavior:
+          TargetOriginId: site
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6   # CachingOptimized (geree par AWS)
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt FonctionPagesApplication.FunctionMetadata.FunctionARN
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: api
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad          # CachingDisabled
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # AllViewerExceptHostHeader
+          - PathPattern: /collab*
+            TargetOriginId: edition
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad          # CachingDisabled
+            OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3  # AllViewer
+
+  # ---------- E-mail ----------
+  # (le budget n'existe pas dans CloudFormation en eu-north-1 : il est cree par deployer.sh)
+  IdentiteEmail:
+    Type: AWS::SES::EmailIdentity
+    Properties: { EmailIdentity: !Ref EmailAuteur }
+
+Outputs:
+  Adresse:
+    Value: !Sub https://${Distribution.DomainName}
+  IdDistribution:
+    Value: !Ref Distribution
+  BucketSite:
+    Value: !Ref BucketSite
+  BucketDonnees:
+    Value: !Ref BucketDonnees
+  IdServeurEdition:
+    Value: !Ref ServeurEdition

@@ -13,5 +13,6 @@ Ordre de lecture recommandé. Chaque document cite les identifiants des précéd
 | 05 | [Sécurité et abus](05-securite.md) | session, droits, IAM, réseau, abus | à valider |
 | 06 | [Données et API](06-donnees-et-api.md) | tables, écritures atomiques, états, API REST et WebSocket (livrable 4), séquences | à valider |
 | 07 | [Identité et interfaces](07-identite-et-interfaces.md) | nom (B-SyncText), logo, charte, maquettes des 11 écrans | à valider |
+| 08 | [Infrastructure](08-infrastructure.md) | ressources AWS, droits, déploiement, coût d'oubli | à valider |
 
 Documents liés hors de ce dossier : [journal des décisions](../DECISIONS.md), [plan de test](../tests/plan-de-test.md).
