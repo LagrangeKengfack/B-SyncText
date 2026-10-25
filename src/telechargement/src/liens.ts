@@ -13,6 +13,8 @@ export interface Ports {
   nouvelId: () => string;
   /** PDF de l'exemplaire k (reconstruction du document, PDF de base, tampon). */
   produirePdf: (lien: Lien, k: number, maintenant: number) => Promise<Uint8Array>;
+  /** PDF de base prêt pour ce lien ? Faux si une autre exécution est en train de le générer. */
+  preparerPdf: (lien: Lien, maintenant: number) => Promise<boolean>;
   /** E-mail « lien épuisé » au créateur. */
   envoyerCourriel: (lien: Lien, epuiseLe: number) => Promise<void>;
   journal?: (message: string, erreur?: unknown) => void;
@@ -98,6 +100,8 @@ export async function traiterDemande(p: Ports, lienId: string): Promise<ReponseH
       p.cache.ajouter(lienId, lien.titre, lien.n);
       return json(200, epuise(lien.n));
     }
+    // Le PDF est préparé avant de réserver : au pic, un seul visiteur le génère, les autres patientent 1 s.
+    if (!(await p.preparerPdf(lien, p.maintenant()))) return json(200, { ...patientez(lien.n), reessayerDans: 1 });
     if (lien.disponibles > 0) {
       const r = await tenterReservation(p, lienId);
       if (r) return r;

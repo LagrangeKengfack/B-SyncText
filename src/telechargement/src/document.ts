@@ -144,39 +144,60 @@ async function prendreVerrouPdf(d: DepsDocument, docId: string, versionId: strin
   }
 }
 
+interface SourcePdf { versionId: string; numero: string; etat: Uint8Array; editeLe: number }
+
 /**
- * PDF de base, selon le mode du document (D-012) :
+ * Ce que le PDF doit contenir, selon le mode du document (D-012) :
  * - `version` : la dernière version déclarée par un rédacteur ; s'il n'y en a aucune, l'état courant (capturé) ;
  * - `direct` : l'état au moment du clic, capturé en version automatique (une par état).
- * Un PDF par version, en cache S3.
  */
-export async function pdfDeBase(d: DepsDocument, docId: string, titre: string, maintenant: number): Promise<{ pdf: Uint8Array; numero: string }> {
+async function resoudreSource(d: DepsDocument, docId: string, maintenant: number): Promise<SourcePdf> {
   const doc = (await d.ddb.send(new GetCommand({ TableName: d.tableDocuments, Key: { docId }, ConsistentRead: true }))).Item;
   if (!doc) throw new Error(`document ${docId} introuvable`);
   const direct = doc.modeTelechargement === 'direct';
-  let versionId = !direct && typeof doc.derniereVersionId === 'string' ? doc.derniereVersionId : undefined;
-  let numero = !direct && typeof doc.derniereVersionNumero === 'string' ? doc.derniereVersionNumero : undefined;
-  let editeLe = maintenant;
-  let etat: Uint8Array | undefined;
+  const versionId = !direct && typeof doc.derniereVersionId === 'string' ? doc.derniereVersionId : undefined;
+  const numero = !direct && typeof doc.derniereVersionNumero === 'string' ? doc.derniereVersionNumero : undefined;
   if (versionId && numero) {
     const v = (await d.ddb.send(new GetCommand({ TableName: d.tableVersions, Key: { docId, versionId } }))).Item;
-    if (typeof v?.cleS3 === 'string') etat = (await lireObjet(d.s3, d.bucket, v.cleS3))?.corps;
-    if (typeof v?.creeLe === 'number') editeLe = v.creeLe;
+    const etat = typeof v?.cleS3 === 'string' ? (await lireObjet(d.s3, d.bucket, v.cleS3))?.corps : undefined;
+    if (etat) return { versionId, numero, etat, editeLe: typeof v?.creeLe === 'number' ? v.creeLe : maintenant };
   }
-  if (!etat) {
-    const { ydoc, seq } = await reconstruire(d, docId);
-    const r = await numeroPourEtat(d, docId, seq, ydoc, maintenant);
-    numero = r.numero;
-    versionId = r.versionId ?? seq;
-    etat = Y.encodeStateAsUpdate(ydoc);
-  }
-  const cle = `pdf/${docId}/${versionId}.pdf`;
+  const { ydoc, seq } = await reconstruire(d, docId);
+  const r = await numeroPourEtat(d, docId, seq, ydoc, maintenant);
+  return { versionId: r.versionId ?? seq, numero: r.numero, etat: Y.encodeStateAsUpdate(ydoc), editeLe: maintenant };
+}
+
+async function genererEtRanger(d: DepsDocument, docId: string, titre: string, src: SourcePdf, cle: string): Promise<Uint8Array> {
+  const ydoc = new Y.Doc();
+  Y.applyUpdate(ydoc, src.etat);
+  const pdf = await genererPdf(yjsVersBlocs(ydoc), { titre, numeroVersion: src.numero, editeLe: dateHeureWat(src.editeLe).replace(' ', ' à ') });
+  await d.s3.send(new PutObjectCommand({
+    Bucket: d.bucket, Key: cle, Body: pdf, ContentType: 'application/pdf', Metadata: { 'numero-version': src.numero },
+  }));
+  return pdf;
+}
+
+/**
+ * Appelé à la demande d'exemplaire, avant la réservation : vrai si le PDF de base existe (ou vient d'être généré
+ * par cette exécution), faux si une autre exécution le génère. Au pic, un seul visiteur paie la génération ;
+ * les autres reçoivent « patientez » et reviennent une seconde plus tard, quand le fichier existe (C-5).
+ */
+export async function assurerPdfDeBase(d: DepsDocument, docId: string, titre: string, maintenant: number): Promise<boolean> {
+  const src = await resoudreSource(d, docId, maintenant);
+  const cle = `pdf/${docId}/${src.versionId}.pdf`;
+  if ((await lireObjet(d.s3, d.bucket, cle))?.meta['numero-version']) return true;
+  if (!(await prendreVerrouPdf(d, docId, src.versionId, maintenant))) return false;
+  await genererEtRanger(d, docId, titre, src, cle);
+  return true;
+}
+
+/** PDF de base d'un exemplaire : en cache S3, sinon généré (une seule exécution à la fois, les autres attendent). */
+export async function pdfDeBase(d: DepsDocument, docId: string, titre: string, maintenant: number): Promise<{ pdf: Uint8Array; numero: string }> {
+  const src = await resoudreSource(d, docId, maintenant);
+  const cle = `pdf/${docId}/${src.versionId}.pdf`;
   const existant = await lireObjet(d.s3, d.bucket, cle);
   if (existant?.meta['numero-version']) return { pdf: existant.corps, numero: existant.meta['numero-version'] };
-
-  // Au pic, des centaines de visiteurs demandent le même PDF avant qu'il existe : une seule exécution
-  // le génère (verrou de 20 s sur le document), les autres attendent qu'il apparaisse dans S3.
-  if (!(await prendreVerrouPdf(d, docId, versionId!, maintenant))) {
+  if (!(await prendreVerrouPdf(d, docId, src.versionId, maintenant))) {
     for (let essai = 0; essai < 25; essai++) {
       await pause(400);
       const pret = await lireObjet(d.s3, d.bucket, cle);
@@ -184,12 +205,5 @@ export async function pdfDeBase(d: DepsDocument, docId: string, titre: string, m
     }
     // Le générateur n'a pas abouti : on génère soi-même.
   }
-
-  const ydoc = new Y.Doc();
-  Y.applyUpdate(ydoc, etat);
-  const pdf = await genererPdf(yjsVersBlocs(ydoc), { titre, numeroVersion: numero!, editeLe: dateHeureWat(editeLe).replace(' ', ' à ') });
-  await d.s3.send(new PutObjectCommand({
-    Bucket: d.bucket, Key: cle, Body: pdf, ContentType: 'application/pdf', Metadata: { 'numero-version': numero! },
-  }));
-  return { pdf, numero: numero! };
+  return { pdf: await genererEtRanger(d, docId, titre, src, cle), numero: src.numero };
 }

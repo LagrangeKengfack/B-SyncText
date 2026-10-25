@@ -15,6 +15,7 @@ function ports(n: number, horloge = { t: 1_000_000 }) {
     maintenant: () => horloge.t,
     nouvelId,
     produirePdf: async (_l, k) => new TextEncoder().encode(`pdf ${k}`),
+    preparerPdf: async () => true,
     envoyerCourriel: async (l) => { courriels.push(l.creePar); },
     journal: () => {},
   };

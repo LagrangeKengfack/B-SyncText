@@ -6,7 +6,7 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { SESv2Client } from '@aws-sdk/client-sesv2';
 import { nouvelId } from '@b-synctext/commun';
 import { depotDynamo } from './depot.js';
-import { pdfDeBase } from './document.js';
+import { assurerPdfDeBase, pdfDeBase } from './document.js';
 import { envoyeurSes } from './courriel.js';
 import { tamponner } from './pdf.js';
 import { type Ports, traiterDemande, traiterFichier, traiterLien } from './liens.js';
@@ -44,6 +44,7 @@ function lesPorts(): Ports {
       void numero;
       return tamponner(pdf, libelleExemplaire(k, lien.n));
     },
+    preparerPdf: (lien, maintenant) => assurerPdfDeBase(deps, lien.docId, lien.titre, maintenant),
     envoyerCourriel: envoyeurSes(ses, env('EMAIL_EXPEDITEUR')),
   };
   return ports;
