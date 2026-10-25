@@ -91,7 +91,7 @@ Resources:
   GroupeEdition:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: serveur d'edition - port 8080 ouvert a CloudFront seulement
+      GroupDescription: serveur edition - port 8080 ouvert a CloudFront seulement
       VpcId: !Ref Vpc
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -523,7 +523,7 @@ Resources:
     Properties:
       Name: !Sub bsynctext-pages-${AWS::StackName}
       AutoPublish: true
-      FunctionConfig: { Comment: chemins de l'application vers index.html, Runtime: cloudfront-js-2.0 }
+      FunctionConfig: { Comment: chemins de l application vers index.html, Runtime: cloudfront-js-2.0 }
       FunctionCode: |
         function handler(event) {
           var req = event.request;
