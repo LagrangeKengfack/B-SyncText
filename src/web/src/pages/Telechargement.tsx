@@ -97,7 +97,7 @@ export default function Telechargement() {
             {etat.nom === 'pret' && (
               <section className="etat-public">
                 <div className="etat-public__icone etat-public__icone--succes"><Icone nom="check" /></div>
-                <span className="numero">Votre exemplaire est réservé · {nombre(etat.restants)} restants sur {nombre(etat.n)}</span>
+                <span className="numero">{nombre(etat.restants)} restants sur {nombre(etat.n)}</span>
                 <h1>Votre exemplaire est prêt</h1>
                 <p className="etat-public__texte">Votre téléchargement démarre. S'il ne démarre pas tout seul, cliquez sur le bouton « Télécharger le PDF ».</p>
                 <a className="bouton bouton--principal bouton--grand" href={etat.url}><Icone nom="telecharger" />Télécharger le PDF</a>
