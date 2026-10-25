@@ -28,7 +28,7 @@ export function creerFaux() {
     async getDocument(id) { return documents.get(id); },
     async getDocuments(ids) { return ids.flatMap((i) => (documents.has(i) ? [documents.get(i)!] : [])); },
     async definirJetonInvitation(id, j) { documents.get(id)!.jetonInvitation = j; },
-    async renommerDocument(id, t) { documents.get(id)!.titre = t; },
+    async modifierDocument(id, c) { Object.assign(documents.get(id)!, c); },
     async getMembre(id, e) { return membres.find((m) => m.docId === id && m.email === e); },
     async listerMembres(id) { return membres.filter((m) => m.docId === id); },
     async listerMembresDe(e) { return membres.filter((m) => m.email === e); },

@@ -1,4 +1,4 @@
-import type { FormatVersion } from '@b-synctext/commun';
+import type { FormatVersion, ModeTelechargement } from '@b-synctext/commun';
 // Types partagés par le routeur, les règles et l'accès aux données.
 
 export type Role = 'principal' | 'proprietaire' | 'membre';
@@ -19,6 +19,8 @@ export interface Document {
   modifieLe: number;
   jetonInvitation: string;
   formatVersion?: FormatVersion;
+  /** 'version' : le PDF est la dernière version déclarée ; 'direct' : l'état au moment du clic (D-012). */
+  modeTelechargement?: ModeTelechargement;
   niv1?: number;
   niv2?: number;
   niv3?: number;
@@ -75,7 +77,7 @@ export interface Donnees {
   getDocument(docId: string): Promise<Document | undefined>;
   getDocuments(docIds: string[]): Promise<Document[]>;
   definirJetonInvitation(docId: string, jeton: string): Promise<void>;
-  renommerDocument(docId: string, titre: string): Promise<void>;
+  modifierDocument(docId: string, champs: { titre?: string; modeTelechargement?: ModeTelechargement }): Promise<void>;
 
   getMembre(docId: string, email: string): Promise<Membre | undefined>;
   listerMembres(docId: string): Promise<Membre[]>;

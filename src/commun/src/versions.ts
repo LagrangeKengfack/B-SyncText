@@ -1,6 +1,13 @@
 // Numéros de version (D-011) : format choisi à la création du document, définitif.
 // `v.x` → v1, v2… ; `v.x.x` → v1.0, v1.1, v2.0… ; `v.x.x.x` → v1.0.0, v1.0.1…
 
+/** Ce que donne un lien de téléchargement (D-012) : la dernière version déclarée, ou l'état au moment du clic. */
+export type ModeTelechargement = 'version' | 'direct';
+export const MODE_TELECHARGEMENT_DEFAUT: ModeTelechargement = 'version';
+export function estModeTelechargement(v: unknown): v is ModeTelechargement {
+  return v === 'version' || v === 'direct';
+}
+
 export type FormatVersion = 'v.x' | 'v.x.x' | 'v.x.x.x';
 export const FORMATS_VERSION: readonly FormatVersion[] = ['v.x', 'v.x.x', 'v.x.x.x'];
 export const FORMAT_VERSION_DEFAUT: FormatVersion = 'v.x.x';

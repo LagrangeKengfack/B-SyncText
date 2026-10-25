@@ -3,7 +3,7 @@ import * as Y from 'yjs';
 import { GetObjectCommand, PutObjectCommand, type S3Client } from '@aws-sdk/client-s3';
 import { GetCommand, PutCommand, QueryCommand, UpdateCommand, type DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import {
-  FORMAT_VERSION_DEFAUT, estFormatVersion, incrementer, msDuSeq, nouveauSeq, numeroVersion, profondeur, yjsVersBlocs, type FormatVersion,
+  FORMAT_VERSION_DEFAUT, dateHeureWat, estFormatVersion, incrementer, msDuSeq, nouveauSeq, numeroVersion, profondeur, yjsVersBlocs, type FormatVersion,
 } from '@b-synctext/commun';
 import { genererPdf } from './pdf.js';
 import { estRefusCondition } from './regles.js';
@@ -128,18 +128,23 @@ export async function numeroPourEtat(
 }
 
 /**
- * PDF de base : la **dernière version numérotée** du document (D-012). S'il n'y a encore aucune version,
- * l'état courant est capturé en version automatique, puis servi. Un PDF par version, en cache S3.
+ * PDF de base, selon le mode du document (D-012) :
+ * - `version` : la dernière version déclarée par un rédacteur ; s'il n'y en a aucune, l'état courant (capturé) ;
+ * - `direct` : l'état au moment du clic, capturé en version automatique (une par état).
+ * Un PDF par version, en cache S3.
  */
 export async function pdfDeBase(d: DepsDocument, docId: string, titre: string, maintenant: number): Promise<{ pdf: Uint8Array; numero: string }> {
   const doc = (await d.ddb.send(new GetCommand({ TableName: d.tableDocuments, Key: { docId }, ConsistentRead: true }))).Item;
   if (!doc) throw new Error(`document ${docId} introuvable`);
-  let versionId = typeof doc.derniereVersionId === 'string' ? doc.derniereVersionId : undefined;
-  let numero = typeof doc.derniereVersionNumero === 'string' ? doc.derniereVersionNumero : undefined;
+  const direct = doc.modeTelechargement === 'direct';
+  let versionId = !direct && typeof doc.derniereVersionId === 'string' ? doc.derniereVersionId : undefined;
+  let numero = !direct && typeof doc.derniereVersionNumero === 'string' ? doc.derniereVersionNumero : undefined;
+  let editeLe = maintenant;
   let etat: Uint8Array | undefined;
   if (versionId && numero) {
     const v = (await d.ddb.send(new GetCommand({ TableName: d.tableVersions, Key: { docId, versionId } }))).Item;
     if (typeof v?.cleS3 === 'string') etat = (await lireObjet(d.s3, d.bucket, v.cleS3))?.corps;
+    if (typeof v?.creeLe === 'number') editeLe = v.creeLe;
   }
   if (!etat) {
     const { ydoc, seq } = await reconstruire(d, docId);
@@ -154,7 +159,7 @@ export async function pdfDeBase(d: DepsDocument, docId: string, titre: string, m
 
   const ydoc = new Y.Doc();
   Y.applyUpdate(ydoc, etat);
-  const pdf = await genererPdf(yjsVersBlocs(ydoc), { titre, numeroVersion: numero! });
+  const pdf = await genererPdf(yjsVersBlocs(ydoc), { titre, numeroVersion: numero!, editeLe: `${dateHeureWat(editeLe)} (WAT)` });
   await d.s3.send(new PutObjectCommand({
     Bucket: d.bucket, Key: cle, Body: pdf, ContentType: 'application/pdf', Metadata: { 'numero-version': numero! },
   }));

@@ -131,13 +131,18 @@ export function creerDonnees(db: DynamoDBDocumentClient, s3: S3Client, bucket: s
       );
     },
 
-    async renommerDocument(docId, titre) {
+    async modifierDocument(docId, champs) {
+      const parties: string[] = [];
+      const valeurs: Record<string, unknown> = {};
+      if (champs.titre !== undefined) { parties.push('titre = :t'); valeurs[':t'] = champs.titre; }
+      if (champs.modeTelechargement !== undefined) { parties.push('modeTelechargement = :m'); valeurs[':m'] = champs.modeTelechargement; }
+      if (!parties.length) return;
       await db.send(
         new UpdateCommand({
           TableName: t.documents,
           Key: { docId },
-          UpdateExpression: 'SET titre = :t',
-          ExpressionAttributeValues: { ':t': titre },
+          UpdateExpression: `SET ${parties.join(', ')}`,
+          ExpressionAttributeValues: valeurs,
           ConditionExpression: 'attribute_exists(docId)',
         }),
       );

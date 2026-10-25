@@ -4,6 +4,7 @@ import {
   CREDIT_JOURNALIER,
   estEmailValide,
   estFormatVersion,
+  estModeTelechargement,
   FORMAT_VERSION_DEFAUT,
   jourWat,
   normaliserEmail,
@@ -12,6 +13,7 @@ import {
   signerJeton,
   verifierJeton,
   type FormatVersion,
+  type ModeTelechargement,
 } from '@b-synctext/commun';
 import { planifierRole, exigerMembre, exigerProprietaire, type NouveauRole } from './regles.js';
 import { trouverRoute, type Params, type Route } from './routeur.js';
@@ -162,6 +164,7 @@ const creerDocument: Gestionnaire = async (a) => {
     modifieLe: maintenant,
     jetonInvitation: jeton,
     formatVersion,
+    modeTelechargement: 'version',
     niv1: 0,
     niv2: 0,
     niv3: 0,
@@ -190,6 +193,7 @@ const lireDocument: Gestionnaire = async (a) => {
     titre: doc.titre,
     role: moiMembre.role,
     formatVersion: doc.formatVersion ?? FORMAT_VERSION_DEFAUT,
+    modeTelechargement: doc.modeTelechargement ?? 'version',
     derniereVersion: doc.derniereVersionId ? { versionId: doc.derniereVersionId, numero: doc.derniereVersionNumero ?? null } : null,
     membres: membres.map((m) => ({ email: m.email, nom: m.nom, role: m.role })),
   };
@@ -229,16 +233,23 @@ const changerRole: Gestionnaire = async (a) => {
   return { statut: 200, corps: { changements } };
 };
 
-// Renommer : tout membre (le titre ne consomme pas de crédit, UC-02).
-const renommerDocument: Gestionnaire = async (a) => {
+// Modifier : le titre ou le mode de téléchargement (tout rédacteur membre, depuis l'éditeur, D-012).
+const modifierDocument: Gestionnaire = async (a) => {
   const id = await identifier(a);
   await exigerNonBloque(a, id.email);
   const { docId } = a.params as { docId: string };
-  const titre = titreValide(a.corps.titre);
   await documentOuErreur(a, docId);
   exigerMembre(await a.ctx.donnees.getMembre(docId, id.email));
-  await a.ctx.donnees.renommerDocument(docId, titre);
-  return { statut: 200, corps: { docId, titre } };
+  const champs: { titre?: string; modeTelechargement?: ModeTelechargement } = {};
+  if (a.corps.titre !== undefined) champs.titre = titreValide(a.corps.titre);
+  if (a.corps.modeTelechargement !== undefined) {
+    const mode = a.corps.modeTelechargement;
+    valider(estModeTelechargement(mode), "Le mode de téléchargement doit être 'version' ou 'direct'.");
+    champs.modeTelechargement = mode as ModeTelechargement;
+  }
+  valider(Object.keys(champs).length > 0, 'Rien à modifier.');
+  await a.ctx.donnees.modifierDocument(docId, champs);
+  return { statut: 200, corps: { docId, ...champs } };
 };
 
 const regenererInvitation: Gestionnaire = async (a) => {
@@ -414,7 +425,7 @@ export const routes: Route<Gestionnaire>[] = [
   { methode: 'GET', motif: '/documents/{docId}', gestionnaire: lireDocument },
   { methode: 'POST', motif: '/documents/{docId}/membres', gestionnaire: ajouterMembre },
   { methode: 'PATCH', motif: '/documents/{docId}/membres/{email}', gestionnaire: changerRole },
-  { methode: 'PATCH', motif: '/documents/{docId}', gestionnaire: renommerDocument },
+  { methode: 'PATCH', motif: '/documents/{docId}', gestionnaire: modifierDocument },
   { methode: 'POST', motif: '/documents/{docId}/invitation', gestionnaire: regenererInvitation },
   { methode: 'POST', motif: '/invitations/{jeton}', gestionnaire: accepterInvitation },
   { methode: 'GET', motif: '/documents/{docId}/versions', gestionnaire: listerVersions },
