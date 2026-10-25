@@ -7,7 +7,6 @@ Toute l'infrastructure AWS de B-SyncText est décrite dans un seul fichier, [`te
 | `template.yaml` | description de toutes les ressources de l'application |
 | `deployer.sh` | crée ou met à jour l'application entière |
 | `supprimer.sh` | supprime tout, après confirmation |
-| `generateur.yaml`, `generateur.sh` | machine temporaire pour les tests de charge (voir `tests/README.md`) |
 
 ## 1. Ce qui est créé
 
@@ -101,4 +100,3 @@ Le script demande de taper `oui`, puis :
 |---|---|
 | Au repos (EC2, adresse IPv4, disque) | environ **0,55 USD par jour** si l'on oublie de supprimer |
 | Lambda, API Gateway, DynamoDB, S3, CloudFront | presque rien sans trafic, en grande partie dans les offres gratuites |
-| Générateur de charge (`m7i-flex.large`) | environ 0,10 USD de l'heure, à supprimer après les tests |

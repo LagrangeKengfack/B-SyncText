@@ -3,7 +3,7 @@ Description: B-SyncText - generateur de charge temporaire (a supprimer apres les
 
 # Machine qui lance les tests de concurrence et de charge depuis la meme region,
 # pour que la connexion de l'auteur ne limite pas les mesures. Pilotee par SSM, sans SSH.
-# Creation et suppression : infra/generateur.sh
+# Creation et suppression : tests/generateur/generateur.sh
 
 Parameters:
   SousReseau:

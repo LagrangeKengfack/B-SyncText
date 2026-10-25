@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Générateur de charge temporaire, dans la même région que l'application.
 # Usage :
-#   infra/generateur.sh creer                 crée la machine (pile bsynctext-generateur)
-#   infra/generateur.sh lancer "<commande>"   envoie les tests, lance la commande, rapatrie les résultats
-#   infra/generateur.sh supprimer             supprime la machine
+#   tests/generateur/generateur.sh creer                 crée la machine (pile bsynctext-generateur)
+#   tests/generateur/generateur.sh lancer "<commande>"   envoie les tests, lance la commande, rapatrie les résultats
+#   tests/generateur/generateur.sh supprimer             supprime la machine
 set -euo pipefail
 REGION="${AWS_REGION:-eu-north-1}"; export AWS_REGION="$REGION" AWS_DEFAULT_REGION="$REGION"
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 PILE=bsynctext-generateur
 COMPTE=$(aws sts get-caller-identity --query Account --output text)
 ARTEFACTS="bsynctext-artefacts-$COMPTE"
@@ -15,20 +15,20 @@ machine() { aws cloudformation describe-stacks --stack-name $PILE --query "Stack
 
 case "${1:-}" in
 creer)
-  aws cloudformation deploy --stack-name $PILE --template-file infra/generateur.yaml --capabilities CAPABILITY_IAM \
+  aws cloudformation deploy --stack-name $PILE --template-file tests/generateur/generateur.yaml --capabilities CAPABILITY_IAM \
     --parameter-overrides SousReseau="$(ressource SousReseauA)" Vpc="$(ressource Vpc)" BucketArtefacts="$ARTEFACTS"
   echo "Machine : $(machine)" ;;
 lancer)
   CMD="${2:?commande manquante}"
   # Un fichier par script de test, avec ses dépendances (ws, yjs, unpdf…)
-  rm -rf infra/paquets/tests && mkdir -p infra/paquets/tests
+  rm -rf tests/generateur/paquets && mkdir -p tests/generateur/paquets
   for f in tests/concurrence/t0*.mjs tests/charge/redacteurs.mjs; do
     npx esbuild "$f" --bundle --platform=node --target=node22 --format=esm --log-level=error \
-      --outfile="infra/paquets/tests/$(basename "$f")" \
+      --outfile="tests/generateur/paquets/$(basename "$f")" \
       --banner:js="import { createRequire } from 'module'; const require = createRequire(import.meta.url);"
   done
-  cp tests/charge/t06-pic.js infra/paquets/tests/
-  aws s3 sync infra/paquets/tests "s3://$ARTEFACTS/charge/tests/" --delete --only-show-errors
+  cp tests/charge/t06-pic.js tests/generateur/paquets/
+  aws s3 sync tests/generateur/paquets "s3://$ARTEFACTS/charge/tests/" --delete --only-show-errors
   M=$(machine)
   SCRIPT="set -e; mkdir -p /opt/essais /opt/resultats; cd /opt/essais; aws s3 sync s3://$ARTEFACTS/charge/tests/ . --only-show-errors; ulimit -n 200000; export RESULTATS_DIR=/opt/resultats; $CMD; aws s3 sync /opt/resultats s3://$ARTEFACTS/charge/resultats/ --only-show-errors"
   ID=$(aws ssm send-command --instance-ids "$M" --document-name AWS-RunShellScript --timeout-seconds 3600 \

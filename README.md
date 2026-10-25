@@ -39,7 +39,7 @@ flowchart LR
 
 **L'écriture et le téléchargement passent par deux chemins séparés** : le pic des visiteurs ne peut pas ralentir les rédacteurs.
 
-| Contrainte du sujet | Comment elle est tenue |
+| Contrainte | Comment elle est tenue |
 |---|---|
 | Exactement N téléchargements par lien | réservation par écriture conditionnelle atomique dans DynamoDB ; adresse de fichier à usage unique |
 | Aucune modification perdue, même texte pour tous | CRDT **Yjs** ; une modification n'est confirmée qu'après son enregistrement dans DynamoDB |
@@ -70,8 +70,15 @@ src/
   telechargement/   Lambda « telechargement » : réservation des exemplaires, PDF, e-mail
   commun/           code partagé : crédit, jetons, versions, lecture du document Yjs
 infra/              infrastructure (CloudFormation) et scripts de déploiement
-tests/              tests de concurrence et de charge
+tests/              tests de concurrence et de charge, générateur de charge
 ```
+
+## Documentation du dépôt
+
+| Fichier | Ce qu'il couvre |
+|---|---|
+| [infra/README.md](infra/README.md) | **description de l'infrastructure** : ressources AWS créées, droits de chaque composant, sécurité ; guide complet pour déployer, vérifier, supprimer ; coût |
+| [tests/README.md](tests/README.md) | **tests** : unitaires, de concurrence et de charge ; ce que vérifie chaque test (codes T-01 à T-07) ; commandes ; générateur de charge dans AWS |
 
 ## Déployer
 

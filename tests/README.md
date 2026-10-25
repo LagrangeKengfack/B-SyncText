@@ -43,8 +43,10 @@ node charge/redacteurs.mjs --duree 240                             # 300 rédact
 
 ### Depuis la région AWS (recommandé)
 Depuis un ordinateur personnel, la connexion internet ne tient pas 1 000 connexions simultanées et fausse les mesures. Les tests se lancent donc depuis une machine temporaire, dans la même région que l'application :
+Les fichiers sont dans `tests/generateur/` : `generateur.yaml` décrit la machine (un `m7i-flex.large`, environ 0,10 USD de l'heure, pilotée par SSM sans SSH) et `generateur.sh` la commande. Depuis la racine du dépôt :
 ```
-infra/generateur.sh creer
-infra/generateur.sh lancer "BASE_URL=https://… node t01-c1.mjs --n 1,500 --m 1000 --repetitions 5"
-infra/generateur.sh supprimer
+tests/generateur/generateur.sh creer
+tests/generateur/generateur.sh lancer "BASE_URL=https://… node t01-c1.mjs --n 1,500 --m 1000 --repetitions 5"
+tests/generateur/generateur.sh supprimer      # à faire après les tests
 ```
+Les résultats sont rapatriés dans `tests/resultats/`.
