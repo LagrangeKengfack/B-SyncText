@@ -53,6 +53,8 @@ export interface Lien {
   comptes: number;
   numerotation: number;
   etat: 'actif' | 'epuise';
+  emailEnvoye?: boolean;
+  emailErreur?: string;
   notifie: boolean;
   creeLe: number;
 }

@@ -33,8 +33,10 @@ export async function cloturer(p: Ports, lien: Lien, maintenant: number): Promis
     if (await p.depot.marquerNotifie(lien.lienId)) {
       try {
         await p.envoyerCourriel(lien, maintenant);
+        await p.depot.marquerEmail(lien.lienId, true);
       } catch (e) {
         journaliser(p, `envoi de l'e-mail impossible pour le lien ${lien.lienId}`, e);
+        await p.depot.marquerEmail(lien.lienId, false, e instanceof Error ? e.message : String(e)).catch(() => {});
       }
     }
   } catch (e) {

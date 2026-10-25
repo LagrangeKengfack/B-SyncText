@@ -334,6 +334,9 @@ const listerLiens: Gestionnaire = async (a) => {
       n: l.n,
       restants: l.disponibles,
       etat: l.etat,
+      // e-mail « lien épuisé » : 'envoye', 'echec' (adresse non vérifiée en bac à sable SES…) ou null
+      email: l.emailEnvoye === true ? 'envoye' : l.emailErreur ? 'echec' : null,
+      emailErreur: l.emailErreur ?? null,
       creeLe: l.creeLe,
       creePar: l.creeParNom,
     })),

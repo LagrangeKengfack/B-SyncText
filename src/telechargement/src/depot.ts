@@ -28,6 +28,8 @@ export interface Lien {
   numerotation: number;
   etat: 'actif' | 'epuise';
   notifie?: boolean;
+  emailEnvoye?: boolean;
+  emailErreur?: string;
   creeLe: number;
   epuiseLe?: number;
 }
@@ -53,6 +55,8 @@ export interface Depot {
   marquerEpuise(lienId: string, maintenant: number): Promise<void>;
   /** notifie = true SI notifie = false (ou absent) ; vrai si c'est cet appel qui l'a posé. */
   marquerNotifie(lienId: string): Promise<boolean>;
+  /** Résultat de l'envoi, visible dans la liste des liens. */
+  marquerEmail(lienId: string, envoye: boolean, erreur?: string): Promise<void>;
 }
 
 export function depotDynamo(ddb: DynamoDBDocumentClient, tableLiens: string, tableReservations: string): Depot {
@@ -176,6 +180,15 @@ export function depotDynamo(ddb: DynamoDBDocumentClient, tableLiens: string, tab
       } catch (e) {
         if (!estRefusCondition(e)) throw e;
       }
+    },
+
+    async marquerEmail(lienId, envoye, erreur) {
+      await ddb.send(new UpdateCommand({
+        TableName: tableLiens,
+        Key: { lienId },
+        UpdateExpression: envoye ? 'SET emailEnvoye = :v REMOVE emailErreur' : 'SET emailEnvoye = :f, emailErreur = :e',
+        ExpressionAttributeValues: envoye ? { ':v': true } : { ':f': false, ':e': (erreur ?? 'inconnue').slice(0, 300) },
+      }));
     },
 
     async marquerNotifie(lienId) {

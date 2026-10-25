@@ -31,7 +31,10 @@ export interface Version {
   auteurs?: string[] | string
   auteur?: string
 }
-export interface LienResume { lienId: string; n: number; restants: number; etat: 'actif' | 'epuise' }
+export interface LienResume {
+  lienId: string; n: number; restants: number; etat: 'actif' | 'epuise'
+  email?: 'envoye' | 'echec' | null; emailErreur?: string | null
+}
 export interface LienPublic { titre: string; n: number; restants: number; etat: 'actif' | 'epuise' }
 export type Demande =
   | { etat: 'pret'; ticket: string; expireA: number; restants: number; n: number }

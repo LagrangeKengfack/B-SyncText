@@ -44,6 +44,11 @@ export function depotMemoire(liens: Lien[]) {
       const l = tableLiens.get(id)!;
       if (l.etat === 'actif' && l.comptes >= l.n) { l.etat = 'epuise'; l.epuiseLe = m; }
     },
+    async marquerEmail(id, envoye, erreur) {
+      const l = tableLiens.get(id)!;
+      l.emailEnvoye = envoye;
+      if (erreur) l.emailErreur = erreur; else delete l.emailErreur;
+    },
     async marquerNotifie(id) {
       await tick();
       const l = tableLiens.get(id)!;

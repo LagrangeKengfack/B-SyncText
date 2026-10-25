@@ -84,6 +84,8 @@ export default function Liens({ docId, titreDoc, onFermer }: { docId: string; ti
                   {epuise ? <span className="etat etat--epuise"><Icone nom="interdit" />Épuisé</span>
                     : presque ? <span className="etat etat--attente"><Icone nom="alerte" />Presque épuisé</span>
                     : <span className="etat etat--info">Actif</span>}
+                  {l.email === 'envoye' && <span className="etat etat--succes"><Icone nom="check" />E-mail envoyé</span>}
+                  {l.email === 'echec' && <span className="etat etat--attente" title={l.emailErreur ?? undefined}><Icone nom="alerte" />E-mail non envoyé</span>}
                 </div>
                 <div className="credit">
                   <div className="credit__texte"><span>Restants</span><strong>{nombre(l.restants)} / {nombre(l.n)}</strong></div>

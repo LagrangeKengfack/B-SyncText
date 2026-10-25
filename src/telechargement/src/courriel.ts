@@ -6,7 +6,7 @@ import { courrielEpuise } from './regles.js';
 export function envoyeurSes(ses: SESv2Client, expediteur: string) {
   return async (lien: Lien, epuiseLe: number): Promise<void> => {
     const { sujet, texte } = courrielEpuise(lien.titre, lien.n, epuiseLe, lien.creeParNom);
-    await ses.send(new SendEmailCommand({
+    const r = await ses.send(new SendEmailCommand({
       FromEmailAddress: expediteur,
       Destination: { ToAddresses: [lien.creePar] },
       Content: {
@@ -16,5 +16,6 @@ export function envoyeurSes(ses: SESv2Client, expediteur: string) {
         },
       },
     }));
+    console.log(`e-mail « lien épuisé » accepté par SES pour ${lien.lienId} : ${r.MessageId ?? ''}`);
   };
 }
