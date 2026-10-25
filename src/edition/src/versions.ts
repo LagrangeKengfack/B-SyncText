@@ -1,7 +1,7 @@
 // Versions (H-06) : instantanés S3 numérotés, et restauration par une nouvelle modification.
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { nouveauSeq, numeroVersion } from '@b-synctext/commun';
+import { FORMAT_VERSION_DEFAUT, estFormatVersion, incrementer, nouveauSeq, numeroVersion, type FormatVersion } from '@b-synctext/commun';
 import * as Y from 'yjs';
 import { estConditionRefusee, expireDans, type Dependances } from './dependances.js';
 import { lireObjet } from './persistance.js';
@@ -15,6 +15,8 @@ export interface DemandeVersion {
   auteur: string;
   auteurs?: string[];
   nom?: string;
+  /** Chiffre à incrémenter (1 = premier) pour une version manuelle ; défaut : le dernier (D-011). */
+  niveau?: number;
   /** seq du journal couvert par cet état. */
   seqEtat: string;
 }
@@ -24,20 +26,30 @@ export interface VersionCreee {
   numero: string;
 }
 
-/** Numéro suivant : `ADD versionMajeure 1, SET versionMineure = 0` (manuelle, restauration) ou `ADD versionMineure 1` (auto). */
-async function numeroter(d: Dependances, docId: string, type: TypeVersion): Promise<{ majeure: number; mineure: number }> {
-  const auto = type === 'auto';
+/**
+ * Numéro suivant (D-011) : le chiffre `niveau` +1, les chiffres à droite à 0, en une écriture atomique.
+ * Une version automatique ou une restauration incrémente le dernier chiffre du format.
+ */
+async function numeroter(d: Dependances, docId: string, type: TypeVersion, niveau?: number): Promise<{ numero: string; niveaux: number[] }> {
+  const lu = await d.ddb.send(new GetCommand({ TableName: d.tables.documents, Key: { docId }, ConsistentRead: true }));
+  if (!lu.Item) throw new Error(`document ${docId} introuvable`);
+  const format: FormatVersion = estFormatVersion(lu.Item.formatVersion) ? lu.Item.formatVersion : FORMAT_VERSION_DEFAUT;
+  const actuels = [Number(lu.Item.niv1 ?? 0), Number(lu.Item.niv2 ?? 0), Number(lu.Item.niv3 ?? 0)];
+  const voulus = incrementer(actuels, type === 'manuelle' ? niveau : undefined, format);
+  const k = voulus.findIndex((v, i) => v !== actuels[i]) + 1;
+  const zeros = [1, 2, 3].filter((i) => i > k).map((i) => `niv${i} = :zero`);
   const r = await d.ddb.send(
     new UpdateCommand({
       TableName: d.tables.documents,
       Key: { docId },
-      UpdateExpression: auto ? 'ADD versionMineure :un' : 'ADD versionMajeure :un SET versionMineure = :zero',
+      UpdateExpression: `ADD niv${k} :un` + (zeros.length ? ` SET ${zeros.join(', ')}` : ''),
       ConditionExpression: 'attribute_exists(docId)',
-      ExpressionAttributeValues: auto ? { ':un': 1 } : { ':un': 1, ':zero': 0 },
+      ExpressionAttributeValues: zeros.length ? { ':un': 1, ':zero': 0 } : { ':un': 1 },
       ReturnValues: 'ALL_NEW',
     }),
   );
-  return { majeure: Number(r.Attributes?.versionMajeure ?? 0), mineure: Number(r.Attributes?.versionMineure ?? 0) };
+  const niveaux = [Number(r.Attributes?.niv1 ?? 0), Number(r.Attributes?.niv2 ?? 0), Number(r.Attributes?.niv3 ?? 0)];
+  return { numero: numeroVersion(format, niveaux), niveaux };
 }
 
 export async function creerVersion(d: Dependances, q: DemandeVersion): Promise<VersionCreee> {
@@ -48,8 +60,7 @@ export async function creerVersion(d: Dependances, q: DemandeVersion): Promise<V
   await d.s3.send(
     new PutObjectCommand({ Bucket: d.bucket, Key: cleS3, Body: q.etat, ContentType: 'application/octet-stream' }),
   );
-  const { majeure, mineure } = await numeroter(d, q.docId, q.type);
-  const numero = numeroVersion(majeure, mineure);
+  const { numero, niveaux } = await numeroter(d, q.docId, q.type, q.niveau);
   await d.ddb.send(
     new PutCommand({
       TableName: d.tables.versions,
@@ -73,9 +84,9 @@ export async function creerVersion(d: Dependances, q: DemandeVersion): Promise<V
       new UpdateCommand({
         TableName: d.tables.documents,
         Key: { docId: q.docId },
-        UpdateExpression: 'SET derniereVersionSeq = :s, derniereVersionNumero = :num',
-        ConditionExpression: 'versionMajeure = :maj AND versionMineure = :min',
-        ExpressionAttributeValues: { ':s': q.seqEtat, ':num': numero, ':maj': majeure, ':min': mineure },
+        UpdateExpression: 'SET derniereVersionSeq = :s, derniereVersionNumero = :num, derniereVersionId = :id',
+        ConditionExpression: 'niv1 = :a AND niv2 = :b AND niv3 = :c',
+        ExpressionAttributeValues: { ':s': q.seqEtat, ':num': numero, ':id': versionId, ':a': niveaux[0], ':b': niveaux[1], ':c': niveaux[2] },
       }),
     );
   } catch (e) {

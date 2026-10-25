@@ -92,7 +92,7 @@ describe('serveur d’édition (Hocuspocus réel)', () => {
     const env = await demarrer();
     const { ddb, port, serveur } = env;
     for (const email of ['a@x.fr', 'b@x.fr']) ddb.put('Membres', { docId: 'doc1', email, role: 'membre' });
-    ddb.put('Documents', { docId: 'doc1', versionMajeure: 0, versionMineure: 0 });
+    ddb.put('Documents', { docId: 'doc1', formatVersion: 'v.x', niv1: 0, niv2: 0, niv3: 0 });
 
     const a = rediger(port, 'a@x.fr');
     await attendre(() => a.provider.isSynced);
@@ -136,7 +136,7 @@ describe('serveur d’édition (Hocuspocus réel)', () => {
     ddb.put('Membres', { docId: 'doc1', email: 'p@x.fr', role: 'principal' });
     ddb.put('Membres', { docId: 'doc1', email: 'm@x.fr', role: 'membre' });
     ddb.put('Redacteurs', { email: 'm@x.fr', nom: 'm' });
-    ddb.put('Documents', { docId: 'doc1', versionMajeure: 0, versionMineure: 0 });
+    ddb.put('Documents', { docId: 'doc1', formatVersion: 'v.x', niv1: 0, niv2: 0, niv3: 0 });
     const docServeur = () => serveur.hocuspocus.documents.get('doc1')!;
 
     const p = rediger(port, 'p@x.fr');
@@ -173,7 +173,7 @@ describe('serveur d’édition (Hocuspocus réel)', () => {
   it('redémarrage : un nouveau serveur reconstruit le document (S3 + journal)', async () => {
     const env = fauxDeps(Date.now());
     env.ddb.put('Membres', { docId: 'doc1', email: 'a@x.fr', role: 'principal' });
-    env.ddb.put('Documents', { docId: 'doc1', versionMajeure: 0, versionMineure: 0 });
+    env.ddb.put('Documents', { docId: 'doc1', formatVersion: 'v.x', niv1: 0, niv2: 0, niv3: 0 });
     const premier = await demarrer(env);
     const a = rediger(premier.port, 'a@x.fr');
     await attendre(() => a.provider.isSynced);

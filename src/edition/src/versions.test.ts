@@ -6,25 +6,27 @@ import { autoriserVersionManuelle, calculerRestauration, creerVersion, lireEtatV
 
 function avecDocument() {
   const env = fauxDeps();
-  env.ddb.put('Documents', { docId: 'doc1', titre: 'T', versionMajeure: 0, versionMineure: 0 });
+  env.ddb.put('Documents', { docId: 'doc1', titre: 'T', formatVersion: 'v.x.x', niv1: 0, niv2: 0, niv3: 0 });
   return env;
 }
 
 describe('versions (H-06)', () => {
-  it('numérote v0.1, v1, v1.1, v2 et garde l’état dans S3', async () => {
+  it('numérote v0.1, v1.0, v1.1, v1.2 (format v.x.x, D-011) et garde l’état dans S3', async () => {
     const { deps, ddb, s3 } = avecDocument();
     const etat = Y.encodeStateAsUpdate(docInitial());
     const base = { docId: 'doc1', etat, auteur: 'a@x.fr', seqEtat: '0000000000001#abcdef' };
     const numeros = [];
-    for (const type of ['auto', 'manuelle', 'auto', 'restauration'] as const) {
-      numeros.push((await creerVersion(deps, { ...base, type })).numero);
+    // auto → dernier chiffre ; manuelle niveau 1 → premier chiffre, le reste à 0 ; restauration → dernier chiffre
+    const suite = [{ type: 'auto' }, { type: 'manuelle', niveau: 1 }, { type: 'auto' }, { type: 'restauration' }] as const;
+    for (const v of suite) {
+      numeros.push((await creerVersion(deps, { ...base, ...v })).numero);
     }
-    expect(numeros).toEqual(['v0.1', 'v1', 'v1.1', 'v2']);
+    expect(numeros).toEqual(['v0.1', 'v1.0', 'v1.1', 'v1.2']);
     const versions = ddb.items('Versions');
     expect(versions).toHaveLength(4);
     expect(versions[1]).toMatchObject({ type: 'manuelle', auteur: 'a@x.fr', seqEtat: base.seqEtat });
     expect(s3.objets.has(String(versions[0]!.cleS3))).toBe(true);
-    expect(ddb.get('Documents', { docId: 'doc1' })).toMatchObject({ derniereVersionNumero: 'v2', derniereVersionSeq: base.seqEtat });
+    expect(ddb.get('Documents', { docId: 'doc1' })).toMatchObject({ derniereVersionNumero: 'v1.2', derniereVersionSeq: base.seqEtat });
     expect(await lireEtatVersion(deps, 'doc1', String(versions[0]!.versionId))).toEqual(etat);
   });
 

@@ -12,6 +12,8 @@ export class SuiviDocument {
   derniereCompactage: number;
   modifieDepuisVersion = false;
   derniereVersionAuto: number;
+  /** Dernière modification acceptée (ms) : une version automatique part après un délai de calme. */
+  derniereModification = 0;
   auteursDepuisVersion = new Set<string>();
   modifieDepuisPresence = false;
 
@@ -30,7 +32,8 @@ export class SuiviDocument {
   }
 
   /** L'entrée est acceptée (écrite) : on note l'activité. */
-  noterAcceptee(seq: string, auteur: string): void {
+  noterAcceptee(seq: string, auteur: string, maintenant = Date.now()): void {
+    this.derniereModification = maintenant;
     if (!this.dernierSeq || seq > this.dernierSeq) this.dernierSeq = seq;
     this.modifieDepuisCompactage = true;
     this.modifieDepuisVersion = true;

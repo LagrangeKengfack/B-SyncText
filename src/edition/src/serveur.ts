@@ -75,7 +75,8 @@ export function creerServeur(o: OptionsServeur) {
   const d = o.deps;
   const intervalle = o.intervalleTicMs ?? 5_000;
   const delaiCompactage = o.delaiCompactageMs ?? 30_000;
-  const delaiVersionAuto = o.delaiVersionAutoMs ?? 600_000;
+  // Version automatique après ce délai de calme (aucune modification), D-011 / D-012.
+  const delaiVersionAuto = o.delaiVersionAutoMs ?? 5_000;
 
   const suivis = new Map<string, SuiviDocument>();
   /** Rédacteurs bloqués connus de ce serveur (fin de blocage en ms). */
@@ -127,6 +128,7 @@ export function creerServeur(o: OptionsServeur) {
     type: TypeVersion,
     auteur: string,
     nom?: string,
+    niveau?: number,
   ) {
     const seqEtat = suivi.seqEtat();
     const etat = Y.encodeStateAsUpdate(doc);
@@ -136,7 +138,7 @@ export function creerServeur(o: OptionsServeur) {
     suivi.auteursDepuisVersion = new Set();
     suivi.derniereVersionAuto = d.maintenant();
     try {
-      return await creerVersion(d, { docId, etat, type, auteur, auteurs, nom, seqEtat });
+      return await creerVersion(d, { docId, etat, type, auteur, auteurs, nom, niveau, seqEtat });
     } catch (e) {
       suivi.modifieDepuisVersion ||= modifie;
       for (const a of auteurs) suivi.auteursDepuisVersion.add(a);
@@ -165,7 +167,7 @@ export function creerServeur(o: OptionsServeur) {
         suivi.debutEcriture(seq);
         try {
           await ecrireJournal(d, { docId, seq, maj, auteur: email, caracteres: 0 });
-          suivi.noterAcceptee(seq, email);
+          suivi.noterAcceptee(seq, email, d.maintenant());
           Y.applyUpdate(doc, maj, origine);
         } finally {
           suivi.finEcriture(seq);
@@ -188,13 +190,14 @@ export function creerServeur(o: OptionsServeur) {
     });
   }
 
-  async function creerVersionManuelle(connection: Connection<ContexteConnexion>, doc: Document, suivi: SuiviDocument, nom: unknown) {
+  async function creerVersionManuelle(connection: Connection<ContexteConnexion>, doc: Document, suivi: SuiviDocument, nom: unknown, niveau: unknown) {
     const libelle = typeof nom === 'string' ? nom.trim().slice(0, 120) : '';
+    const chiffre = typeof niveau === 'number' ? niveau : undefined;
     if (!(await autoriserVersionManuelle(d, doc.name))) {
       return envoyer(connection, { type: 'erreur', message: 'Une version par minute au plus pour ce document.' });
     }
     const v = await suivi.executerSeul(() =>
-      versionDocument(doc.name, doc, suivi, 'manuelle', connection.context.email, libelle || undefined),
+      versionDocument(doc.name, doc, suivi, 'manuelle', connection.context.email, libelle || undefined, chiffre),
     );
     envoyer(connection, { type: 'versionCreee', numero: v.numero, versionId: v.versionId });
   }
@@ -309,10 +312,10 @@ export function creerServeur(o: OptionsServeur) {
     async onStateless({ connection, document, payload }) {
       const c = connection as Connection<ContexteConnexion>;
       try {
-        const message = JSON.parse(payload) as { type?: unknown; nom?: unknown; versionId?: unknown };
+        const message = JSON.parse(payload) as { type?: unknown; nom?: unknown; niveau?: unknown; versionId?: unknown };
         const suivi = suivis.get(document.name);
         if (!suivi) return;
-        if (message.type === 'creerVersion') await creerVersionManuelle(c, document, suivi, message.nom);
+        if (message.type === 'creerVersion') await creerVersionManuelle(c, document, suivi, message.nom, message.niveau);
         else if (message.type === 'restaurer' && typeof message.versionId === 'string') {
           await restaurer(c, document, suivi, message.versionId);
         } else envoyer(c, { type: 'erreur', message: 'Message inconnu.' });
@@ -389,7 +392,7 @@ export function creerServeur(o: OptionsServeur) {
         if (suivi.modifieDepuisCompactage && m - suivi.derniereCompactage >= delaiCompactage) {
           await suivi.executerSeul(() => compacterDocument(docId, doc, suivi));
         }
-        if (suivi.modifieDepuisVersion && m - suivi.derniereVersionAuto >= delaiVersionAuto) {
+        if (suivi.modifieDepuisVersion && m - suivi.derniereModification >= delaiVersionAuto) {
           const auteurs = [...suivi.auteursDepuisVersion];
           await suivi.executerSeul(() => versionDocument(docId, doc, suivi, 'auto', auteurs.at(-1) ?? 'serveur'));
         }
