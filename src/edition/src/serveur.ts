@@ -157,6 +157,7 @@ export function creerServeur(o: OptionsServeur) {
     await suivi.executerSeul(async () => {
       const avant = await versionDocument(docId, doc, suivi, 'restauration', email);
       const maj = calculerRestauration(doc, etatVersion);
+      suivi.invaliderLongueur(); // la restauration change la longueur sans passer par le contrôle
       const origine = { source: 'local' as const, context: { restauration: versionId } };
       if (maj.byteLength <= TAILLE_MAX_MAJ_OCTETS) {
         const seq = nouveauSeq(d.maintenant());
@@ -250,7 +251,6 @@ export function creerServeur(o: OptionsServeur) {
       const r = await reconstruire(d, documentName, document);
       const suivi = new SuiviDocument(d.maintenant(), r.dernierSeq);
       suivis.set(documentName, suivi);
-      document.on('update', () => suivi.invaliderLongueur());
     },
 
     // Contrôle AVANT application : appelé par Hocuspocus pour chaque message Sync,

@@ -32,8 +32,12 @@ export class SuiviDocument {
   }
 
   /** L'entrée est acceptée (écrite) : on note l'activité. */
-  noterAcceptee(seq: string, auteur: string, maintenant = Date.now()): void {
+  noterAcceptee(seq: string, auteur: string, maintenant = Date.now(), caracteres = 0): void {
     this.derniereModification = maintenant;
+    // Longueur tenue à jour par addition (les suppressions ne sont pas déduites : on surestime, et on
+    // recalcule exactement à l'approche de la limite). Parcourir le document à chaque modification
+    // saturait le processeur à 300 rédacteurs.
+    if (this.longueur !== undefined) this.longueur += caracteres;
     if (!this.dernierSeq || seq > this.dernierSeq) this.dernierSeq = seq;
     this.modifieDepuisCompactage = true;
     this.modifieDepuisVersion = true;
@@ -59,9 +63,15 @@ export class SuiviDocument {
     this.longueur = undefined;
   }
 
-  /** Longueur du texte, recalculée seulement après une modification. */
+  /** Longueur du texte (estimation haute, voir noterAcceptee). */
   longueurTexte(ydoc: Y.Doc): number {
     this.longueur ??= longueurTexte(ydoc);
+    return this.longueur;
+  }
+
+  /** Longueur exacte, parcours complet du document. */
+  recalculerLongueur(ydoc: Y.Doc): number {
+    this.longueur = longueurTexte(ydoc);
     return this.longueur;
   }
 

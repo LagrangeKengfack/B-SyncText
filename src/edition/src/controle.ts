@@ -55,7 +55,7 @@ export async function controlerMiseAJour(d: Dependances, q: DemandeControle): Pr
   let credit: { restant: number; rechargeA: number } | undefined;
   const jour = jourWat(m);
   if (n > 0) {
-    if (q.suivi.longueurTexte(q.ydoc) + n > TAILLE_MAX_DOCUMENT) {
+    if (q.suivi.longueurTexte(q.ydoc) + n > TAILLE_MAX_DOCUMENT && q.suivi.recalculerLongueur(q.ydoc) + n > TAILLE_MAX_DOCUMENT) {
       return { decision: 'refusee', raison: 'taille', ...(await lireCredit(d, q.email)) };
     }
     const debit = await debiterCredit(d, q.email, n);
@@ -72,6 +72,6 @@ export async function controlerMiseAJour(d: Dependances, q: DemandeControle): Pr
     if (n > 0) await rembourserCredit(d, q.email, n, jour);
     throw e;
   }
-  q.suivi.noterAcceptee(seq, q.email);
+  q.suivi.noterAcceptee(seq, q.email, m, n);
   return { decision: 'acceptee', seq, caracteres: n, ...credit };
 }
