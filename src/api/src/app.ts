@@ -3,12 +3,15 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import {
   CREDIT_JOURNALIER,
   estEmailValide,
+  estFormatVersion,
+  FORMAT_VERSION_DEFAUT,
   jourWat,
   normaliserEmail,
   nouvelId,
   prochaineRecharge,
   signerJeton,
   verifierJeton,
+  type FormatVersion,
 } from '@b-synctext/commun';
 import { planifierRole, exigerMembre, exigerProprietaire, type NouveauRole } from './regles.js';
 import { trouverRoute, type Params, type Route } from './routeur.js';
@@ -144,6 +147,10 @@ const creerDocument: Gestionnaire = async (a) => {
   const id = await identifier(a);
   await exigerNonBloque(a, id.email);
   const titre = titreValide(a.corps.titre);
+  // Format de numérotation des versions (D-011) : choisi ici, définitif.
+  const formatBrut = a.corps.formatVersion ?? FORMAT_VERSION_DEFAUT;
+  valider(estFormatVersion(formatBrut), 'Le format de version doit être v.x, v.x.x ou v.x.x.x.');
+  const formatVersion = formatBrut as FormatVersion;
   const maintenant = a.ctx.maintenant();
   const docId = nouvelId();
   const jeton = `${docId}.${nouvelId()}`;
@@ -154,8 +161,10 @@ const creerDocument: Gestionnaire = async (a) => {
     creePar: id.email,
     modifieLe: maintenant,
     jetonInvitation: jeton,
-    versionMajeure: 0,
-    versionMineure: 0,
+    formatVersion,
+    niv1: 0,
+    niv2: 0,
+    niv3: 0,
   };
   await a.ctx.donnees.creerDocument(doc, {
     docId,
@@ -166,7 +175,7 @@ const creerDocument: Gestionnaire = async (a) => {
   });
   return {
     statut: 201,
-    corps: { docId, titre, role: 'principal', lienInvitation: lienInvitation(jeton) },
+    corps: { docId, titre, role: 'principal', formatVersion, lienInvitation: lienInvitation(jeton) },
   };
 };
 
@@ -180,6 +189,8 @@ const lireDocument: Gestionnaire = async (a) => {
     docId,
     titre: doc.titre,
     role: moiMembre.role,
+    formatVersion: doc.formatVersion ?? FORMAT_VERSION_DEFAUT,
+    derniereVersion: doc.derniereVersionId ? { versionId: doc.derniereVersionId, numero: doc.derniereVersionNumero ?? null } : null,
     membres: membres.map((m) => ({ email: m.email, nom: m.nom, role: m.role })),
   };
   if (moiMembre.role !== 'membre') corps.lienInvitation = lienInvitation(doc.jetonInvitation);

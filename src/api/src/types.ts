@@ -1,3 +1,4 @@
+import type { FormatVersion } from '@b-synctext/commun';
 // Types partagés par le routeur, les règles et l'accès aux données.
 
 export type Role = 'principal' | 'proprietaire' | 'membre';
@@ -17,8 +18,12 @@ export interface Document {
   creePar: string;
   modifieLe: number;
   jetonInvitation: string;
-  versionMajeure: number;
-  versionMineure: number;
+  formatVersion?: FormatVersion;
+  niv1?: number;
+  niv2?: number;
+  niv3?: number;
+  derniereVersionId?: string;
+  derniereVersionNumero?: string;
   connectes?: number;
   presenceMaj?: number;
 }

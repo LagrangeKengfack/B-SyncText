@@ -72,7 +72,7 @@ describe('documents', () => {
     const c = await appel(f, 'POST', '/api/documents', 'a@b.fr', { titre: ' Mon doc ' });
     expect(c.statut).toBe(201);
     const docId = (c.corps as any).docId;
-    expect(f.documents.get(docId)).toMatchObject({ versionMajeure: 0, versionMineure: 0, titre: 'Mon doc' });
+    expect(f.documents.get(docId)).toMatchObject({ formatVersion: 'v.x.x', niv1: 0, niv2: 0, niv3: 0, titre: 'Mon doc' });
     expect(f.membres[0]).toMatchObject({ role: 'principal', email: 'a@b.fr' });
     const l = await appel(f, 'GET', '/api/documents', 'a@b.fr');
     expect((l.corps as any)[0]).toMatchObject({ docId, role: 'principal', connectes: 0 });
@@ -195,8 +195,8 @@ describe('versions, liens, tableau de bord', () => {
   });
   it('tableau de bord : code, filtres et limite de 10 échecs', async () => {
     const f = creerFaux();
-    f.documents.set('d1', { docId: 'd1', titre: 'Ouvert', creeLe: 0, creePar: 'a', modifieLe: 0, jetonInvitation: 'x', versionMajeure: 0, versionMineure: 0, connectes: 2, presenceMaj: T0 - 5000 });
-    f.documents.set('d2', { docId: 'd2', titre: 'Vieux', creeLe: 0, creePar: 'a', modifieLe: 0, jetonInvitation: 'x', versionMajeure: 0, versionMineure: 0, connectes: 2, presenceMaj: T0 - 20000 });
+    f.documents.set('d1', { docId: 'd1', titre: 'Ouvert', creeLe: 0, creePar: 'a', modifieLe: 0, jetonInvitation: 'x', niv1: 0, niv2: 0, niv3: 0, connectes: 2, presenceMaj: T0 - 5000 });
+    f.documents.set('d2', { docId: 'd2', titre: 'Vieux', creeLe: 0, creePar: 'a', modifieLe: 0, jetonInvitation: 'x', niv1: 0, niv2: 0, niv3: 0, connectes: 2, presenceMaj: T0 - 20000 });
     f.redacteurs.set('b@b.fr', { email: 'b@b.fr', nom: 'B', creeLe: 0, bloqueJusqua: T0 + 1, motifBlocage: 'abus' });
     const ok = await appel(f, 'GET', '/api/admin/tableau-de-bord', undefined, undefined, { 'x-code-admin': 'code-admin' });
     expect(ok.statut).toBe(200);
