@@ -181,9 +181,9 @@ describe('serveur d’édition (Hocuspocus réel)', () => {
     await attendre(() => texte(premier.serveur.hocuspocus.documents.get('doc1')!) === 'persistant');
     a.provider.destroy();
     await premier.serveur.destroy();
-    // Au déchargement : état compacté et version automatique.
+    // Au déchargement : état compacté, mais aucune version automatique (D-012 : une version se déclare).
     expect(env.s3.objets.has('etats/doc1.bin')).toBe(true);
-    expect(env.ddb.items('Versions').some((v) => v.type === 'auto')).toBe(true);
+    expect(env.ddb.items('Versions')).toHaveLength(0);
 
     const second = await demarrer(env);
     const b = rediger(second.port, 'a@x.fr');

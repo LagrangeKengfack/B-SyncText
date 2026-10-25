@@ -28,7 +28,6 @@ export interface OptionsServeur {
   /** Présence, compactage et versions auto sont vérifiés à ce rythme. */
   intervalleTicMs?: number;
   delaiCompactageMs?: number;
-  delaiVersionAutoMs?: number;
   /** Arrêt propre sur SIGTERM/SIGINT (vrai en production). */
   arretSurSignaux?: boolean;
 }
@@ -75,8 +74,6 @@ export function creerServeur(o: OptionsServeur) {
   const d = o.deps;
   const intervalle = o.intervalleTicMs ?? 5_000;
   const delaiCompactage = o.delaiCompactageMs ?? 30_000;
-  // Version automatique après ce délai de calme (aucune modification), D-011 / D-012.
-  const delaiVersionAuto = o.delaiVersionAutoMs ?? 5_000;
 
   const suivis = new Map<string, SuiviDocument>();
   /** Rédacteurs bloqués connus de ce serveur (fin de blocage en ms). */
@@ -335,11 +332,8 @@ export function creerServeur(o: OptionsServeur) {
       if (!suivi) return;
       try {
         await suivi.executerSeul(async () => {
+          // Pas de version automatique (D-012) : une version est déclarée par un rédacteur, le texte reste enregistré.
           if (suivi.modifieDepuisCompactage) await compacterDocument(documentName, document, suivi);
-          if (suivi.modifieDepuisVersion) {
-            const auteurs = [...suivi.auteursDepuisVersion];
-            await versionDocument(documentName, document, suivi, 'auto', auteurs.at(-1) ?? 'serveur');
-          }
         });
       } catch (e) {
         console.error('déchargement : compactage ou version en échec (le journal reste complet)', e);
@@ -391,10 +385,6 @@ export function creerServeur(o: OptionsServeur) {
         }
         if (suivi.modifieDepuisCompactage && m - suivi.derniereCompactage >= delaiCompactage) {
           await suivi.executerSeul(() => compacterDocument(docId, doc, suivi));
-        }
-        if (suivi.modifieDepuisVersion && m - suivi.derniereModification >= delaiVersionAuto) {
-          const auteurs = [...suivi.auteursDepuisVersion];
-          await suivi.executerSeul(() => versionDocument(docId, doc, suivi, 'auto', auteurs.at(-1) ?? 'serveur'));
         }
       });
       for (const r of await Promise.allSettled(taches)) {
