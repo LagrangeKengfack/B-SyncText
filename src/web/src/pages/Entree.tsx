@@ -156,11 +156,11 @@ export default function Entree() {
               <form className="pile" onSubmit={soumettre} noValidate>
                 <div className="champ champ--pilule">
                   <label className="sr-seulement" htmlFor="nom">Votre nom</label>
-                  <div className="champ__avec-icone"><Icone nom="utilisateur" /><input id="nom" name="nom" autoComplete="name" placeholder="Votre nom" value={nom} onChange={(e) => setNom(e.target.value)} autoFocus /></div>
+                  <div className="champ__avec-icone"><Icone nom="utilisateur" /><input id="nom" name="nom" autoComplete="off" placeholder="Votre nom" value={nom} onChange={(e) => setNom(e.target.value)} autoFocus /></div>
                 </div>
                 <div className={`champ champ--pilule${emailInvalide ? ' champ--erreur' : ''}`}>
                   <label className="sr-seulement" htmlFor="mail">Votre e-mail</label>
-                  <div className="champ__avec-icone"><Icone nom="mail" /><input id="mail" name="mail" type="email" autoComplete="email" placeholder="Votre e-mail" value={mail} onChange={(e) => setMail(e.target.value)}
+                  <div className="champ__avec-icone"><Icone nom="mail" /><input id="mail" name="mail" type="email" autoComplete="off" placeholder="Votre e-mail" value={mail} onChange={(e) => setMail(e.target.value)}
                     aria-invalid={emailInvalide || undefined} aria-describedby={emailInvalide ? 'mail-err' : 'mail-aide'} /></div>
                   {emailInvalide ? (
                     <span className="champ__erreur" id="mail-err"><Icone nom="alerte" /> Cet e-mail est incomplet. Exemple : prenom.nom@univ-exemple.fr</span>
