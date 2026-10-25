@@ -52,9 +52,9 @@ paquet edition
 envoyer() {
   local empreinte; empreinte=$(sha256sum "$1" | cut -c1-64)
   local bucket="${2#s3://}"; bucket="${bucket%%/*}"; local cle="${2#s3://*/}"
-  if [ "$(aws s3api head-object --bucket "$bucket" --key "$cle" --query 'Metadata.sha256' --output text 2>/dev/null)" = "$empreinte" ]; then
-    echo "déjà en place : $cle"; return 0
-  fi
+  local md5; md5=$(md5sum "$1" | cut -c1-32)
+  local present; present=$(aws s3api head-object --bucket "$bucket" --key "$cle" --query '[Metadata.sha256,ETag]' --output text 2>/dev/null | tr -d '"')
+  case "$present" in *"$empreinte"*|*"$md5"*) echo "déjà en place : $cle"; return 0;; esac
   local i; for i in 1 2 3 4; do
     aws s3 cp "$1" "$2" --only-show-errors --metadata "sha256=$empreinte" && return 0
     echo "nouvel essai ($i)…"; sleep 3
@@ -65,7 +65,9 @@ CLE_API="lambda/api-$(sha256sum "$PAQUETS/api.zip" | cut -c1-12).zip"
 CLE_TEL="lambda/telechargement-$(sha256sum "$PAQUETS/telechargement.zip" | cut -c1-12).zip"
 envoyer "$PAQUETS/api.zip" "s3://$ARTEFACTS/$CLE_API"
 envoyer "$PAQUETS/telechargement.zip" "s3://$ARTEFACTS/$CLE_TEL"
-envoyer "$PAQUETS/edition/index.mjs" "s3://$ARTEFACTS/edition/index.mjs"
+# Le serveur d'édition est envoyé compressé (connexion lente) ; l'instance le décompresse.
+gzip -9 -k -f "$PAQUETS/edition/index.mjs"
+envoyer "$PAQUETS/edition/index.mjs.gz" "s3://$ARTEFACTS/edition/index.mjs.gz"
 
 etape "4. Pile CloudFormation"
 SECRET_ORIGINE=$(aws ssm get-parameter --name /bsynctext/secret-origine --with-decryption --query Parameter.Value --output text)
