@@ -23,6 +23,8 @@ Chaque test porte un code `T-xx`, et chaque code vérifie une contrainte du suje
 | **T-05** | C-4 : crédit journalier | 3 appareils du même rédacteur écrivent jusqu'au refus | jamais plus de 10 000 caractères acceptés |
 | **T-06** | C-5 : le pic | 15 000 visiteurs (12 000 dans la 1re minute) et 300 rédacteurs en même temps | 100 % des visiteurs reçoivent un état ; 95 % des réponses en moins de 2 s ; aucune erreur serveur |
 | **T-07** | C-6 : fin du lien | mesuré pendant T-06 | les visiteurs qui patientent voient « épuisé » en moins de 5 s |
+| **T-08** | abus | un rédacteur sans crédit insiste | bloqué après 20 refus en une minute, visible au tableau de bord |
+| **T-09** | e-mail | un lien d'un exemplaire est épuisé, puis on insiste | exactement un e-mail « lien épuisé » (état « envoyé » sur le lien, +1 dans les statistiques SES) |
 
 ### Lancer un test
 Prérequis : Node.js 22 et l'adresse de l'application dans `BASE_URL`. Depuis le dossier `tests/` :
@@ -33,6 +35,8 @@ node concurrence/t02-remise-en-stock.mjs                           # T-02
 node concurrence/t03-c2.mjs --clients 50 --duree 150               # T-03 (redémarrer le serveur pendant l'essai)
 node concurrence/t04-c3.mjs                                        # T-04
 node concurrence/t05-c4.mjs                                        # T-05
+node concurrence/t08-blocage.mjs --code-admin <code>               # T-08
+EMAIL=<adresse vérifiée dans SES> node concurrence/t09-email.mjs     # T-09
 ```
 Pour T-06 et T-07, il faut d'abord créer un lien de 500 exemplaires (`LIEN_ID`), puis lancer en même temps :
 ```
