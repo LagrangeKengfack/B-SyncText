@@ -48,7 +48,7 @@ Resources:
   Machine:
     Type: AWS::EC2::Instance
     Properties:
-      InstanceType: c7i-flex.large
+      InstanceType: m7i-flex.large   # 8 Go : des milliers de visiteurs simulés (k6) + 300 rédacteurs
       ImageId: !Ref ImageX86
       SubnetId: !Ref SousReseau
       SecurityGroupIds: [!Ref Groupe]
