@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: B-SyncText - editeur de documents partage (eu-north-1)
 
 # Toute l'infrastructure de l'application. Deploiement : infra/deployer.sh ; suppression : infra/supprimer.sh.
-# Description lisible : docs/conception/08-infrastructure.md
+# Description lisible : infra/README.md
 
 Parameters:
   EmailAuteur:

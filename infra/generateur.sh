@@ -39,7 +39,7 @@ lancer)
     case "$S" in Success|Failed|Cancelled|TimedOut) break;; esac; sleep 10
   done
   aws ssm get-command-invocation --command-id "$ID" --instance-id "$M" --query StandardOutputContent --output text
-  aws s3 sync "s3://$ARTEFACTS/charge/resultats/" docs/tests/resultats/ --only-show-errors
+  aws s3 sync "s3://$ARTEFACTS/charge/resultats/" tests/resultats/ --only-show-errors
   echo "Statut : $S" ;;
 supprimer)
   aws cloudformation delete-stack --stack-name $PILE
