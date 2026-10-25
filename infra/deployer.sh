@@ -36,18 +36,24 @@ fi
 etape "3. Construction et paquets"
 npm run build
 rm -rf "$PAQUETS" && mkdir -p "$PAQUETS"
-paquet() {   # $1 = nom du paquet ; bundle ESM unique pour Node 22
-  npx esbuild "src/$1/src/index.ts" --bundle --platform=node --target=node22 --format=esm \
-    --outfile="$PAQUETS/$1/index.mjs" --log-level=warning \
+paquet() {   # $1 = nom du paquet, $2… = options ; bundle ESM unique pour Node 22
+  local nom="$1"; shift
+  npx esbuild "src/$nom/src/index.ts" --bundle --platform=node --target=node22 --format=esm \
+    --outfile="$PAQUETS/$nom/index.mjs" --log-level=warning "$@" \
     --banner:js="import { createRequire } from 'module'; const require = createRequire(import.meta.url);"
 }
-for p in api telechargement edition; do paquet "$p"; done
+# Le SDK AWS v3 est fourni par l'environnement Lambda nodejs22.x : on ne l'embarque pas (paquets 5 fois plus petits).
+paquet api --external:@aws-sdk/*
+paquet telechargement --external:@aws-sdk/*
+paquet edition
+# Envoi vers S3 avec reprises : une connexion lente coupe parfois un transfert
+envoyer() { local i; for i in 1 2 3 4; do aws s3 cp "$1" "$2" --only-show-errors && return 0; echo "nouvel essai ($i)…"; sleep 3; done; return 1; }
 for p in api telechargement; do (cd "$PAQUETS/$p" && zip -qr "../$p.zip" .); done
 CLE_API="lambda/api-$(sha256sum "$PAQUETS/api.zip" | cut -c1-12).zip"
 CLE_TEL="lambda/telechargement-$(sha256sum "$PAQUETS/telechargement.zip" | cut -c1-12).zip"
-aws s3 cp "$PAQUETS/api.zip" "s3://$ARTEFACTS/$CLE_API" --only-show-errors
-aws s3 cp "$PAQUETS/telechargement.zip" "s3://$ARTEFACTS/$CLE_TEL" --only-show-errors
-aws s3 cp "$PAQUETS/edition/index.mjs" "s3://$ARTEFACTS/edition/index.mjs" --only-show-errors
+envoyer "$PAQUETS/api.zip" "s3://$ARTEFACTS/$CLE_API"
+envoyer "$PAQUETS/telechargement.zip" "s3://$ARTEFACTS/$CLE_TEL"
+envoyer "$PAQUETS/edition/index.mjs" "s3://$ARTEFACTS/edition/index.mjs"
 
 etape "4. Pile CloudFormation"
 SECRET_ORIGINE=$(aws ssm get-parameter --name /bsynctext/secret-origine --with-decryption --query Parameter.Value --output text)
