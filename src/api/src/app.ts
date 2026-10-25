@@ -405,7 +405,8 @@ const tableauDeBord: Gestionnaire = async (a) => {
         titre: l.titre,
         creePar: l.creeParNom,
         n: l.n,
-        restants: l.disponibles,
+        // exemplaires pas encore distribués (les réservations en cours comptent comme restantes)
+        restants: l.n - l.comptes,
       })),
       bloques: bloques.map((r) => ({
         email: r.email,

@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react'
 import { api, ErreurApi, type PersonneRef, type TableauDeBord } from '../api.ts'
 import { Barre, Icone, Marque } from '../composants/commun.tsx'
-import { heureWat, heureWatSecondes, initiales, nombre, nomCourt } from '../format.ts'
+import { heureWat, initiales, nombre, nomCourt } from '../format.ts'
 
 const CLE_CODE = 'bsynctext.admin'
 
@@ -42,7 +42,6 @@ export default function Association() {
   const [saisie, setSaisie] = useState('')
   const [erreur, setErreur] = useState('')
   const [donnees, setDonnees] = useState<TableauDeBord | null>(null)
-  const [maj, setMaj] = useState(0)
 
   async function ouvrir(e: FormEvent) {
     e.preventDefault()
@@ -52,7 +51,6 @@ export default function Association() {
       ecrireCode(saisie)
       setCode(saisie)
       setDonnees(d)
-      setMaj(Date.now())
     } catch (e2) {
       setErreur(e2 instanceof ErreurApi && e2.statut === 429 ? 'trop' : 'faux')
     }
@@ -63,7 +61,7 @@ export default function Association() {
     if (!code) return
     let actif = true
     const charger = () => api.tableauDeBord(code).then((d) => {
-      if (actif) { setDonnees(d); setMaj(Date.now()) }
+      if (actif) setDonnees(d)
     }).catch((e) => {
       if (actif && e instanceof ErreurApi && (e.statut === 401 || e.statut === 403)) { ecrireCode(''); setCode(''); setDonnees(null); setErreur('faux') }
     })
@@ -135,7 +133,6 @@ export default function Association() {
       <main className="conteneur pile pile--l" style={{ paddingTop: 'var(--e-4)', paddingBottom: 'var(--e-9)' }}>
         <div className="ligne ligne--entre ligne--haut">
           <div className="salutation"><h1 className="titre-page">Bonjour, l'équipe.</h1><p className="doux">Voici l'état de vos documents et de vos liens, en direct.</p></div>
-          <span className="etat etat--succes" role="status"><Icone nom="actualiser" />Mis à jour à {maj ? heureWatSecondes(maj) : '…'} · toutes les 5 s</span>
         </div>
         <div className="tuiles" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
           <div className="tuile tuile--ligne"><span className="tuile__icone"><Icone nom="documents" /></span><span className="tuile__valeur">{docs.length}</span><span className="tuile__nom">{pluriel(docs.length, 'document')} {pluriel(docs.length, 'ouvert')}</span></div>
