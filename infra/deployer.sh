@@ -48,7 +48,18 @@ paquet api --external:@aws-sdk/*
 paquet telechargement --external:@aws-sdk/*
 paquet edition
 # Envoi vers S3 avec reprises : une connexion lente coupe parfois un transfert
-envoyer() { local i; for i in 1 2 3 4; do aws s3 cp "$1" "$2" --only-show-errors && return 0; echo "nouvel essai ($i)…"; sleep 3; done; return 1; }
+# Un fichier déjà présent avec la même empreinte n'est pas renvoyé.
+envoyer() {
+  local empreinte; empreinte=$(sha256sum "$1" | cut -c1-64)
+  local bucket="${2#s3://}"; bucket="${bucket%%/*}"; local cle="${2#s3://*/}"
+  if [ "$(aws s3api head-object --bucket "$bucket" --key "$cle" --query 'Metadata.sha256' --output text 2>/dev/null)" = "$empreinte" ]; then
+    echo "déjà en place : $cle"; return 0
+  fi
+  local i; for i in 1 2 3 4; do
+    aws s3 cp "$1" "$2" --only-show-errors --metadata "sha256=$empreinte" && return 0
+    echo "nouvel essai ($i)…"; sleep 3
+  done; return 1
+}
 for p in api telechargement; do (cd "$PAQUETS/$p" && zip -qr "../$p.zip" .); done
 CLE_API="lambda/api-$(sha256sum "$PAQUETS/api.zip" | cut -c1-12).zip"
 CLE_TEL="lambda/telechargement-$(sha256sum "$PAQUETS/telechargement.zip" | cut -c1-12).zip"
