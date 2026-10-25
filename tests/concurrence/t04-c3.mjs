@@ -7,6 +7,8 @@ if (o.help) { console.log('Aucune option.'); process.exit(0); }
 exigerBaseUrl();
 
 const { docId, proprio } = await preparerDocument('t04', 0, 'T-04');
+// Mode « temps réel » (D-012) : le PDF est le document au moment du clic.
+await api(`/api/documents/${docId}`, { methode: 'PATCH', jeton: proprio.jeton, corps: { modeTelechargement: 'direct' } });
 const lienId = await creerLien(proprio.jeton, docId, 3); // lien créé à T
 const c = new ClientYjs({ docId, jeton: proprio.jeton, nom: 'proprio' });
 await c.attendreSync();
@@ -23,8 +25,7 @@ async function telecharger() {
 const avant = await telecharger();
 const marqueur = `[t04-${idCourt()}]`;
 const accuse = await c.inserer(marqueur, 'fin');
-// Le PDF est la dernière version numérotée (D-012) : le serveur en crée une après 5 à 10 s de calme.
-await dormir(12_000);
+await dormir(500);
 const apres = await telecharger(); // utilisé à T1
 c.fermer();
 
