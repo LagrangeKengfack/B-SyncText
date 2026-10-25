@@ -2,6 +2,18 @@
 // Ordre : doublon ? → taille → crédit (débit conditionnel) → journal (attendu) → acceptée.
 import { compterCaracteresInseres, jourWat, nouveauSeq, TAILLE_MAX_DOCUMENT } from '@b-synctext/commun';
 import * as Y from 'yjs';
+
+/**
+ * Vrai si tout le contenu de la mise à jour est déjà dans le document (renvoi après reconnexion).
+ * Compare les horloges des structures au vecteur d'état : coût proportionnel à la mise à jour,
+ * pas au document (un instantané Yjs par message saturait le processeur à 300 rédacteurs).
+ */
+function dejaConnue(ydoc: Y.Doc, maj: Uint8Array): boolean {
+  const { structs } = Y.decodeUpdate(maj);
+  if (structs.length === 0) return false;
+  const vecteur = Y.decodeStateVector(Y.encodeStateVector(ydoc));
+  return structs.every((s) => (vecteur.get(s.id.client) ?? 0) >= s.id.clock + s.length);
+}
 import { debiterCredit, lireCredit, rembourserCredit } from './credit.js';
 import type { Dependances } from './dependances.js';
 import { ecrireJournal } from './persistance.js';
@@ -31,7 +43,7 @@ export async function controlerMiseAJour(d: Dependances, q: DemandeControle): Pr
   const m = d.maintenant();
 
   // Rien de nouveau (ex. SyncStep2 vide à la reconnexion) : pas de journal, pas de débit.
-  if (Y.snapshotContainsUpdate(Y.snapshot(q.ydoc), q.maj)) return { decision: 'ignoree' };
+  if (dejaConnue(q.ydoc, q.maj)) return { decision: 'ignoree' };
 
   if (q.bloqueJusqua && q.bloqueJusqua > m) return { decision: 'refusee', raison: 'bloque', bloqueJusqua: q.bloqueJusqua };
 
