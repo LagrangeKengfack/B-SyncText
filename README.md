@@ -78,7 +78,12 @@ tests/              tests de concurrence et de charge, générateur de charge
 | Fichier | Ce qu'il couvre |
 |---|---|
 | [infra/README.md](infra/README.md) | **description de l'infrastructure** : ressources AWS créées, droits de chaque composant, sécurité ; guide complet pour déployer, vérifier, supprimer ; coût |
+| [API.md](API.md) | **description de l'API** : toutes les routes, corps et réponses, états du téléchargement, canal temps réel, et un exemple de test à écrire soi-même |
 | [tests/README.md](tests/README.md) | **tests** : unitaires, de concurrence et de charge ; ce que vérifie chaque test (codes T-01 à T-07) ; commandes ; générateur de charge dans AWS |
+
+## API
+
+La description complète de l'API, assez précise pour écrire ses propres tests, est dans **[API.md](API.md)**.
 
 ## Déployer
 
