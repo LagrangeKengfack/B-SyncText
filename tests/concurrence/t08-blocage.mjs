@@ -14,7 +14,8 @@ const docId = await creerDocument(s.jeton, `T-08 ${run}`);
 const c0 = new ClientYjs({ docId, jeton: s.jeton, nom: 'c0', reinitialiser: false });
 await c0.attendreSync(); c0.preparerParagraphe(); await c0.viderEnvoi(); await c0.attendreParagraphe();
 let accepte = 0;
-for (let k = 0; k < 60; k++) { const r = await c0.inserer('x'.repeat(200), 'fin'); if (r !== 'ok') break; accepte += 200; }
+let refusInitial = 0; // la première insertion refusée (crédit à 0) compte déjà pour le serveur
+for (let k = 0; k < 60; k++) { const r = await c0.inserer('x'.repeat(200), 'fin'); if (r !== 'ok') { if (r === 'refus') refusInitial = 1; break; } accepte += 200; }
 c0.fermer();
 
 // 2. Insister : une connexion par tentative (le serveur ferme la connexion à chaque refus).
@@ -32,7 +33,7 @@ for (let k = 0; k < 24; k++) {
   if (typeof fin === 'number' && fin > Date.now()) { bloqueA = { apresTentative: k + 1, bloqueJusqua: fin }; break; }
 }
 // Le 20e refus déclenche le blocage : le serveur répond alors « bloqué » (raison bloque), ce qui compte comme refus.
-const refus = tentatives.filter((t) => t.resultat === 'refus' || t.raison === 'bloque').length;
+const refus = refusInitial + tentatives.filter((t) => t.resultat === 'refus' || t.raison === 'bloque').length;
 
 // 3. Tableau de bord (si le code est fourni) : le rédacteur y figure.
 let surTableau = null;
