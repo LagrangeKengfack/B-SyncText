@@ -28,6 +28,27 @@ Elle contient une entrée par service et par jour. Seuls les services avec un mo
 
 Lambda, une grande partie de CloudFront et de DynamoDB, et les premières heures d'EC2 sont couverts par les offres gratuites du compte et n'apparaissent pas en coût.
 
+## Estimation sur une semaine, un mois et un an
+
+Ce sont des estimations, pas des relevés. Elles partent de deux chiffres : le coût **au repos** de l'application laissée en ligne (environ 0,55 USD par jour, décrit dans `infra/README.md`) et le coût **d'une parution** de la taille du sujet (15 000 visiteurs et 300 rédacteurs), tiré du relevé ci-dessus : DynamoDB, API Gateway et S3 ont coûté environ 0,19 USD pour quatre essais, soit environ **0,05 USD par pic**.
+
+| Poste | Hypothèse |
+|---|---|
+| Au repos | serveur d'édition, disque et adresse IPv4 publique allumés en permanence : 0,55 USD par jour |
+| Une parution par semaine | 0,05 USD, plus quelques centimes pour les écritures courantes des rédacteurs |
+| Offres gratuites | **non déduites** : l'estimation est donc une borne haute |
+
+| Durée | Au repos | Avec une parution par semaine | Dont le serveur d'édition et son adresse |
+|---|---|---|---|
+| Une semaine (7 jours) | 3,85 USD | **3,90 USD** | environ 99 % |
+| Un mois (30 jours) | 16,50 USD | **16,70 USD** | environ 99 % |
+| Un an (365 jours) | 200,75 USD | **203,40 USD** | environ 99 % |
+
+**Lecture.**
+- Presque tout le coût vient de l'instance du serveur d'édition, seul composant facturé à l'heure. Tout le reste (fonctions, base de données, API, e-mail) coûte à la requête : un pic de 15 000 visiteurs revient à environ 5 centimes.
+- Le projet doit rester en ligne jusqu'au 27 octobre seulement. Les 119,91 USD de crédits du compte couvriraient environ sept mois de fonctionnement continu, pas une année entière.
+- Pour réduire la facture d'une application utilisée par intermittence, il suffirait d'arrêter l'instance quand personne n'écrit : il ne resterait que le disque et l'adresse publique. Cette option n'a pas été mesurée.
+
 ## Ce que cela montre
 
 - **Une dépense très inférieure aux 5 USD visés** dans la conception, tests de charge compris : les quatre essais du pic de 15 000 visiteurs ont coûté moins d'un dollar au total.
