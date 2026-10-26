@@ -44,6 +44,11 @@ Ce sont des estimations, pas des relevés. Elles partent de deux chiffres : le c
 | Un mois (30 jours) | 16,50 USD | **16,70 USD** | environ 99 % |
 | Un an (365 jours) | 200,75 USD | **203,40 USD** | environ 99 % |
 
+**D'où viennent les chiffres.**
+- **0,55 USD par jour au repos** : c'est le coût d'oubli calculé avant le déploiement, à partir des tarifs publics d'AWS pour la région : l'instance `t4g.small` (environ 0,02 USD l'heure, soit environ 0,48 USD par jour), l'adresse IPv4 publique (facturée à l'heure, environ 0,12 USD par jour) et le disque. Le relevé ne contient pas encore une journée complète au repos, donc ce chiffre n'a pas été vérifié par une mesure : il reste une estimation de conception.
+- **0,05 USD par pic** : le relevé donne environ 0,19 USD pour quatre essais du pic, soit environ 0,05 USD en moyenne. C'est une mesure, mais approximative : les quatre essais n'avaient pas tous la même charge, et le relevé du jour contient aussi d'autres tests.
+- **Multiplications** : 7, 30 et 365 jours, sans variation de tarif ni de trafic.
+
 **Lecture.**
 - Presque tout le coût vient de l'instance du serveur d'édition, seul composant facturé à l'heure. Tout le reste (fonctions, base de données, API, e-mail) coûte à la requête : un pic de 15 000 visiteurs revient à environ 5 centimes.
 - Le projet doit rester en ligne jusqu'au 27 octobre seulement. Les 119,91 USD de crédits du compte couvriraient environ sept mois de fonctionnement continu, pas une année entière.
