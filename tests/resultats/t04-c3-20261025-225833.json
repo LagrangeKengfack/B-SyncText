@@ -1,0 +1,21 @@
+{
+  "test": "t04-c3",
+  "date": "2026-10-25T22:58:33.967Z",
+  "baseUrl": "https://d1u2w3ays8s3t6.cloudfront.net",
+  "docId": "iiXl82ignrOr1Spgh50wiA",
+  "lienId": "Y5MDuIg_cJzuXdMvWu4U0A",
+  "marqueur": "[t04-ac68692c]",
+  "accuseInsertion": "ok",
+  "avant": {
+    "etat": "pret",
+    "version": "v0.1",
+    "contientMarqueur": false
+  },
+  "apres": {
+    "etat": "pret",
+    "version": "v0.2",
+    "contientMarqueur": true,
+    "extrait": "T-04 e912b3ba\nVersion v0.2 · Édité le 25/10/2026 à 23:58\nVersion v0.2\n[t04-ac68692c]\n1 / 1Exemplaire 2 / 3"
+  },
+  "verdict": "REUSSI"
+}

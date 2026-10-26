@@ -1,0 +1,10 @@
+préparation : 30 documents, 300 rédacteurs...
+mesure pendant 240 s...
+file:///opt/essais/redacteurs.mjs:14337
+  latenceMs: { p50, p95, p99: percentile(latences, 99), max: latences.length ? Math.max(...latences) : null },
+                                                                                    ^
+
+RangeError: Maximum call stack size exceeded
+    at file:///opt/essais/redacteurs.mjs:14337:85
+
+Node.js v22.23.4

@@ -1,0 +1,112 @@
+{
+  "test": "t08-blocage",
+  "date": "2026-10-26T00:15:40.288Z",
+  "baseUrl": "https://d1u2w3ays8s3t6.cloudfront.net",
+  "docId": "uX3JvaWQySU3OjM1SRo9OA",
+  "email": "t08-4d233aa7@essai.example",
+  "creditAccepte": 10000,
+  "tentatives": [
+    {
+      "k": 0,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 1,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 2,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 3,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 4,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 5,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 6,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 7,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 8,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 9,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 10,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 11,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 12,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 13,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 14,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 15,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 16,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 17,
+      "resultat": "refus",
+      "raison": "credit"
+    },
+    {
+      "k": 18,
+      "resultat": "refus",
+      "raison": "credit"
+    }
+  ],
+  "refus": 20,
+  "bloqueA": {
+    "apresTentative": 19,
+    "bloqueJusqua": 1792974640193
+  },
+  "surTableau": true,
+  "verdict": "REUSSI"
+}

@@ -1,0 +1,25 @@
+{
+  "test": "redacteurs",
+  "date": "2026-10-25T23:58:37.269Z",
+  "baseUrl": "https://d1u2w3ays8s3t6.cloudfront.net",
+  "parametres": {
+    "redacteurs": 100,
+    "tailleGroupe": 10,
+    "documents": 10,
+    "dureeS": 120,
+    "rythme": 2
+  },
+  "insertionsEnvoyees": 23994,
+  "accusesCredit": 16031,
+  "refus": 0,
+  "erreursConnexion": 0,
+  "observationsLatence": 144207,
+  "latenceMs": {
+    "p50": 21560,
+    "p95": 41485,
+    "p99": 43296,
+    "max": 45489
+  },
+  "seuil": "p95 < 1000 ms (T-06)",
+  "verdict": "ECHEC"
+}

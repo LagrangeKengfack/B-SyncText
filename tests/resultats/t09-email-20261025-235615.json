@@ -1,0 +1,18 @@
+{
+  "test": "t09-email",
+  "date": "2026-10-25T23:56:15.502Z",
+  "baseUrl": "https://d1u2w3ays8s3t6.cloudfront.net",
+  "lienId": "BfjSIBgeYnEPX9a3eDmEoQ",
+  "email": "bernicetsafack@gmail.com",
+  "premiereDemande": "pret",
+  "fichier": 200,
+  "apresEpuisement": [
+    "epuise",
+    410,
+    "epuise"
+  ],
+  "etatEmail": "envoye",
+  "erreurEmail": null,
+  "note": "Le nombre d'e-mails effectivement envoyés se lit dans les statistiques SES (aws ses get-send-statistics) : il doit augmenter de 1.",
+  "verdict": "REUSSI"
+}
