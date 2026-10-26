@@ -16,10 +16,10 @@ export function heureWatSecondes(ms: number): string {
   return new Date(ms + DECALAGE_WAT).toISOString().slice(11, 19)
 }
 
-// « demain à 00:00 (WAT) » ou « à 00:00 (WAT) »
+// « demain à 00:00 » ou « à 00:00 »
 export function texteRecharge(rechargeA: number): string {
   const demain = jourWat(rechargeA) !== jourWat(Date.now())
-  return `${demain ? 'demain ' : ''}à ${heureWat(rechargeA)} (WAT)`
+  return `${demain ? 'demain ' : ''}à ${heureWat(rechargeA)}`
 }
 
 export function nombre(n: number): string {

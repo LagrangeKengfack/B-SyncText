@@ -85,7 +85,7 @@ export default function Documents() {
           <div className="tuiles">
             <div className="tuile tuile--ligne"><span className="tuile__icone"><Icone nom="documents" /></span><span className="tuile__valeur">{listes.tous.length}</span><span className="tuile__nom">document{listes.tous.length > 1 ? 's' : ''} auxquels vous avez accès</span></div>
             <div className="tuile tuile--ligne"><span className="tuile__icone"><Icone nom="personnes" /></span><span className="tuile__valeur">{connectes}</span><span className="tuile__nom">personne{connectes > 1 ? 's' : ''} connectée{connectes > 1 ? 's' : ''} dans vos documents</span></div>
-            {credit && <div className="tuile tuile--ligne"><span className="tuile__icone"><Icone nom="crayon" /></span><span className="tuile__valeur">{nombre(credit.restant)} <small>/ {nombre(CREDIT_JOURNALIER)}</small></span><span className="tuile__nom">caractères restants aujourd'hui · recharge {texteRecharge(credit.rechargeA).replace(/^demain /, '').replace(' (WAT)', '')}</span></div>}
+            {credit && <div className="tuile tuile--ligne"><span className="tuile__icone"><Icone nom="crayon" /></span><span className="tuile__valeur">{nombre(credit.restant)} <small>/ {nombre(CREDIT_JOURNALIER)}</small></span><span className="tuile__nom">caractères restants aujourd'hui · recharge {texteRecharge(credit.rechargeA).replace(/^demain /, '').replace('', '')}</span></div>}
           </div>
         )}
 
