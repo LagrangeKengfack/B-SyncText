@@ -28,9 +28,11 @@ for (let k = 0; k < 24; k++) {
   tentatives.push({ k, resultat: r, raison: c.dernierRefus?.raison ?? null });
   c.fermer();
   const moi = await api('/api/moi', { jeton: s.jeton });
-  if (moi.corps?.redacteur?.bloqueJusqua && moi.corps.redacteur.bloqueJusqua > Date.now()) { bloqueA = { apresTentative: k + 1, bloqueJusqua: moi.corps.redacteur.bloqueJusqua }; break; }
+  const fin = moi.corps?.bloqueJusqua ?? moi.corps?.redacteur?.bloqueJusqua; // GET /moi renvoie le rédacteur directement
+  if (typeof fin === 'number' && fin > Date.now()) { bloqueA = { apresTentative: k + 1, bloqueJusqua: fin }; break; }
 }
-const refus = tentatives.filter((t) => t.resultat === 'refus').length;
+// Le 20e refus déclenche le blocage : le serveur répond alors « bloqué » (raison bloque), ce qui compte comme refus.
+const refus = tentatives.filter((t) => t.resultat === 'refus' || t.raison === 'bloque').length;
 
 // 3. Tableau de bord (si le code est fourni) : le rédacteur y figure.
 let surTableau = null;
